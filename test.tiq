@@ -1,0 +1,12 @@
+START
+
+    INCLUDE "./test.tiq"
+
+    // Point for game loop
+    POINT:
+
+    124234234
+    
+    GOTO POINT
+
+END

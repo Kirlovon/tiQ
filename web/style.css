@@ -1,0 +1,81 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100vh;
+    color: white;
+    font-family: monospace;
+    background-color: rgb(30, 30, 30);
+}
+
+.console {
+    top: 45%;
+    left: 50%;
+    display: block;
+    position: fixed;
+    border-radius: 16px;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(160deg, #7e7e7e, #3b3b3b);
+    box-shadow: 0 12px #202020, 0 8px 32px -6px #000000;
+}
+
+.buttons {
+    width: 100%;
+    height: auto;
+    padding: 32px;
+    min-height: 64px;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    background-color: rgba(0, 0, 0, 0.25);
+}
+
+.info {
+    left: 32px;
+    bottom: 32px;
+    position: fixed;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 8px black;
+}
+
+#screen {
+    margin: 32px;
+    margin-top: 36px;
+    margin-bottom: 28px;
+    width: 256px;
+    height: 256px;
+    display: block;
+    border-radius: 6px;
+    background-color: #0a0a0a;
+    box-shadow: 0 -8px rgba(0, 0, 0, 0.4);
+}
+
+button {
+    cursor: pointer;
+    color: #0f0f0f;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 8px 12px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background-color: #bebebe;
+    transform: translateY(-4px);
+    transition: all 0.05s linear;
+    box-shadow: 0 4px rgba(255, 255, 255, 0.2);
+}
+
+button, button:active, button:focus {
+    outline: none;
+    border: none;
+}
+
+button:active {
+    transform: translateY(-2px);
+    background-color: #b1b1b1;
+    box-shadow: 0 2px rgba(255, 255, 255, 0.2);
+}
