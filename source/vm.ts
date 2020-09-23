@@ -1,112 +1,220 @@
+interface VMConfig {
+	safe: boolean;
+	debug: boolean;
+	memory: ArrayBuffer;
+}
+
+const memoryAmount = 4096;
+const registersAmount = 16;
+
+// Opcodes for VM instructions
+export const opcodes = {
+	NOTHING: 0,
+	LOAD: 1,
+	STORE: 2,
+	ADD: 3,
+	SUBSTRACT: 4,
+	INCREASE: 5,
+	DECREASE: 6,
+	EQUAL: 7,
+	LESS: 8,
+	GREATER: 9,
+	AND: 10,
+	OR: 11,
+	XOR: 12,
+	NOT: 13,
+	JUMP: 14,
+	CLEAN: 15,
+};
+
 /**
- * # tiQ
+ * # tiQ VM
  * Tiny virtual machine written in TypeScript
  */
-class tiQ {
-	public registers = 8192;
-	public buffer = new ArrayBuffer(this.registers * 2);
-	public memory = new Uint16Array(this.buffer);
+export default class VM {
+
+	public safe: boolean = true;
+	public debug: boolean = false;
+
+	public counter: number = 0;
 
 	/**
-	 * Registers (0 - 6143)
+	 * Memory ( 0 - 2047 ) 2048
+	 * Input ( 2048 - 2039 ) 8
+	 * Video ( 2040 - 3063 ) 1024
+	 * Unused Memory ( 3064 - 2047 )
+	 */
+	public memory: Uint16Array = new Uint16Array(memoryAmount);
+
+	/**
+	 * Arithmetic Logic Unit ( 0 ) 1
+	 * Counter Unit ( 1 ) 1
+	 * Status Unit ( 2 ) 1
+	 */
+	public registers: Uint8Array = new Uint8Array(registersAmount)
+
+	/**
+	 * Instructions Memory ( 0 - 2047 ) 2048
+	 * Storage Memory ( 2048 - 2559 ) 512
 	 *
-	 * Unused memory (6142 - 7155)
+	 * Arithmetic-Logic Unit ( 2560 ) 1
+	 * Logic Unit ( 2561 ) 1
+	 * Counter Unit ( 2562 ) 1
+	 * State Unit ( 2563 ) 1
 	 *
-	 * State (7156)
-	 * Accumulator (7157)
-	 * Counter (7158)
-	 * Input (7159 - 7166)
-	 * Video (7167 - 8191)
+	 * Unused memory ( 2564 - 3061 )
+	 *
+	 * Input ( 3062 - 3070 ) 8
+	 * Video ( 3071 - 4095 ) 1024
+	 *
+	 * TOTAL: 4096 ( 8kb )
 	 */
 
-     constructor() {
-         this.reset();
-     }
-
-	public start() {
-		this.memory[7156] = 1;
-		setTimeout(() => this.tick());
+	constructor(config?: Partial<VMConfig>) {
+		this.reset();
 	}
 
-	public stop() {
-		this.memory[7156] = 0;
+	public load(buffer: ArrayBuffer): void {
+		this.memory = new Uint16Array(memoryAmount);
 	}
 
 	public reset() {
-		this.buffer = new ArrayBuffer(this.registers * 2);
-		this.memory = new Uint16Array(this.buffer);
+		this.memory = new Uint16Array(memoryAmount);
 	}
 
-	public set(instruction: number, value: number) {
-		return (instruction * this.registers) + value;
+	public start() {
+		this.memory[2563] = 1;
+		setTimeout(() => this.execute());
 	}
 
-	public tick(): void {
-		const counter = this.memory[7158];
+	public stop() {
+		this.memory[2563] = 0;
+	}
+
+	public set(adress: number, value: number): void {
+		if (this.safe) {
+			if (value < 0) value = 0;
+			if (value >= this.size) value = this.size;
+
+			for (let i = 0; i < this.size; i++) {
+				const opcode = i;
+				
+			}
+		}
+
+		this.memory[adress] = value;
+	}
+
+	public get(adress: number): number {
+		return this.memory[adress];
+	}
+
+	public execute(): void {
+		const {
+			NOTHING,
+			LOAD,
+			STORE,
+			ADD,
+			SUBSTRACT,
+			INCREASE,
+			DECREASE,
+			EQUAL,
+			LESS,
+			GREATER,
+			AND,
+			OR,
+			XOR,
+			NOT,
+			JUMP,
+			CLEAN,
+		} = opcodes;
+
+		const counter = this.memory[2562];
 		const instruction = this.memory[counter];
 
-		const type = Math.floor(instruction / this.registers);
-		const value = Math.floor(instruction % this.registers);
+		const opcode: number = Math.floor(instruction / this.size);
+		const value: number = Math.floor(instruction % this.size);
 
-        console.log('Counter: ', counter);
-        console.log('Accumulator: ', this.memory[7157]);
-        console.log('Instruction: ', instruction);
+		if (this.debug) {
 
-        console.log('instrsuction-type: ' + type + ', value: ' + value);
-        console.log('');
+		}
+		
+		switch (opcode) {
+			case NOTHING:
 
-		switch (type) {
-			case 0:
-                console.log('stopped');
-                console.log(this.memory);
-				this.memory[7156] = 0;
 				break;
 
-			case 1:
-				this.memory[7157] = this.memory[value];
+			case LOAD:
+				break;
+			case STORE:
+				break;
+			case ADD:
 				break;
 
-			case 2:
-				this.memory[value] = this.memory[7157];
+			case SUBSTRACT:
 				break;
 
-			case 3:
-				this.memory[7157] = value;
+			case INCREASE:
 				break;
 
-			case 4:
-				this.memory[7157] += this.memory[value];
+			case DECREASE:
 				break;
 
-			case 5:
-				this.memory[7157] -= this.memory[value];
+			case EQUAL:
 				break;
 
-			case 6:
-				if (this.memory[7157] === 0) this.memory[7158] = value - 1;
+			case LESS:
 				break;
 
-			case 7:
-				this.memory[7158] = value - 1;
+			case GREATER:
+				break;
+
+			case AND:
+				break;
+
+			case OR:
+				break;
+
+			case XOR:
+				break;
+
+			case NOT:
+				break;
+
+			case JUMP:
+				break;
+
+			case CLEAN:
 				break;
 
 			default:
-				throw new Error('Invalid instruction number: ' + type);
+				throw new VMError(`Invalid opcode "${opcode}"`);
 		}
 
-		this.memory[7158] += 1;
-		if (this.memory[7158] >= 8192) this.memory[7158] = 0;
-		if (this.memory[7156]) setTimeout(() => this.tick());
+		this.memory[2562] += 1;
+		if (this.memory[2562] >= this.size) this.memory[2562] = 0;
+		if (this.memory[2563]) setTimeout(() => this.execute());
 	}
 }
 
-export default tiQ;
+/** Custom VM error */
+export class VMError extends Error {
+	public name: string = 'VMError';
+	public message: string;
+	public cause: any;
+	public stack: string | undefined;
 
-const vm = new tiQ();
+	/**
+	 * Error initialization.
+	 * @param message Error message.
+	 * @param cause Cause of the error.
+	 */
+	constructor(message: string, cause?: any) {
+		super(message);
+		Error.captureStackTrace(this, VMError);
 
-vm.memory[0] = 24676;
-vm.memory[1] = 16387;
-vm.memory[2] = 57344;
-
-vm.start();
-
+		this.message = message;
+		if (cause) this.cause = cause;
+		if (typeof cause === 'string' || typeof cause === 'number') this.message = `${message}: ${cause}`;
+	}
+}
