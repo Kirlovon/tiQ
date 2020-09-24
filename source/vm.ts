@@ -1,7 +1,6 @@
 interface VMConfig {
 	safe: boolean;
 	debug: boolean;
-	memory: ArrayBuffer;
 }
 
 // Opcodes for VM instructions
@@ -39,153 +38,226 @@ export default class VM {
 
 	private loop: number;
 
-	constructor(config?: Partial<VMConfig>) {
+	constructor(config: Partial<VMConfig> = {}) {
+		if (typeof config !== 'object') throw new VMError('Config must be an object')
+		if (typeof config.safe === 'boolean') this.safe = config.safe;
+		if (typeof config.debug === 'boolean') this.debug = config.debug;
 		this.reset();
+	}
+
+	/**
+	 * Start VM loop
+	 */
+	public start(): void {
+		if (this.debug) this.info('VM is started');
+		clearTimeout(this.loop);
+		this.running = true;
+		this.loop = setTimeout(() => this.step());
 	}
 
 	public load(data: Uint16Array): void {
 		this.memory = data;
 	}
 
+	/**
+	 * Reset VM memory
+	 */
 	public reset() {
+		if (this.debug) this.info('VM is reseted');
 		this.counter = 0;
 		this.accumulator = 0;
 		this.memory = new Uint16Array(4096);
 	}
 
-	public start(): void {
-		this.running = true;
-		this.step();
-	}
-
+	/**
+	 * Stop VM loop
+	 */
 	public stop() {
+		if (this.debug) this.info('VM is stopped');
 		this.running = false;
 		clearTimeout(this.loop);
 	}
 
+	/**
+	 * Fetch, Decode and Execute one instruction from the memory
+	 */
 	public step(): void {
 		this.counter += 1;
-		if (this.counter >= 4096) this.counter = 0;
+		if (this.counter > 4095) this.counter = 0;
 
-		const instruction = this.fetch();
+		const instruction: number = this.fetch(this.counter);
 		const { opcode, argument } = this.decode(instruction);
-
-		if (this.debug) {
-			console.log(`Executing instruction "${instruction}"`, `Opcode: "${opcode}"`, `Argument: "${argument}"`);
-		}
-
 		this.execute(opcode, argument);
 
 		if (this.running) this.loop = setTimeout(() => this.step());
 	}
 
-	private fetch(): number {
-		const current = this.counter;
-		return this.memory[current];
+	/**
+	 * Fetch instruction from address
+	 * @param address Address of the instruction
+	 */
+	private fetch(address: number): number {
+		return this.memory[address];
 	}
 
+	/**
+	 * Decode instruction from memory
+	 * @param instruction Instruction to decode
+	 */
 	private decode(instruction: number): { opcode: number; argument: number } {
-		const opcode: number = Math.floor(instruction / 4096);
-		const argument: number = Math.floor(instruction % 4096);
+		let opcode: number = Math.floor(instruction / 4096);
+		let argument: number = Math.floor(instruction % 4096);
+
+		// Clamp & check the numbers
+		if (this.safe) {
+			if (opcode > 15 || opcode < 0) throw new VMError('Invalid opcode');
+
+			if (argument > 4095) {
+				if (this.debug) this.warn(`Argument was clamped from ${argument} to "4095"`);
+				argument = 4095;
+			} else if (argument < 0) {
+				if (this.debug) this.warn(`Argument was clamped from ${argument} to "0"`);
+				argument = 0;
+			}
+		}
+
 		return { opcode, argument };
 	}
 
+	/**
+	 * Execute decoded VM instruction
+	 * @param opcode Opcode of the instruction
+	 * @param argument Number or address
+	 */
 	private execute(opcode: number, argument: number) {
-		// Clamp argument
-		if (this.safe) {
-			if (argument > 4095) argument = 4095;
-			if (argument < 0) argument = 0;
-		}
+		switch (opcode) {
+			case opcodes.NOTHING:
+				if (this.debug) this.log(`NOTHING, ${argument}`);
+				this.running = false;
+				this.counter = 0;
+				this.accumulator = 0;
+				break;
 
-		if (opcode === opcodes.NOTHING) {
-			this.running = false;
-			this.counter = 0;
-			this.accumulator = 0;
-			return;
-		}
+			case opcodes.LOAD: {
+				if (this.debug) this.log(`LOAD, ${argument} (${this.memory[argument]})`);
+				this.accumulator = this.memory[argument];
+				break;
+			}
 
-		if (opcode === opcodes.LOAD) {
-			this.accumulator = this.memory[argument];
-			return;
-		}
+			case opcodes.SAVE: {
+				if (this.debug) this.log(`SAVE, ${argument} (${this.accumulator})`);
+				this.memory[argument] = this.accumulator;
+				break;
+			}
 
-		if (opcode === opcodes.SAVE) {
-			this.memory[argument] = this.accumulator;
-			return;
-		}
+			case opcodes.ADD: {
+				let value: number = this.accumulator + this.memory[argument];
+				if (this.safe && value > 4095) value = 4095; 
+				
+				if (this.debug) this.log(`ADD, ${argument} (${this.accumulator})`);
+				this.accumulator = value;
+				break;
+			}
 
-		if (opcode === opcodes.ADD) {
-			this.accumulator += this.memory[argument];
-			return;
-		}
+			case opcodes.SUBSTRACT: {
+				let value: number = this.accumulator - this.memory[argument];
+				if (this.safe && value < 0) value = 0; 
+				this.accumulator = value;
+				break;
+			}
 
-		if (opcode === opcodes.SUBSTRACT) {
-			this.accumulator -= this.memory[argument];
-			return;
-		}
+			case opcodes.INCREASE: {
+				let value: number = this.accumulator + 1;
+				if (this.safe && value > 4095) value = 4095;
+				this.accumulator = value;
+				break;
+			}
 
-		if (opcode === opcodes.INCREASE) {
-			this.memory[argument] += 1;
-			return;
-		}
+			case opcodes.DECREASE: {
+				let value: number = this.accumulator - 1;
+				if (this.safe && value < 0) value = 0;
+				this.accumulator = value;
+				break;
+			}
 
-		if (opcode === opcodes.DECREASE) {
-			this.memory[argument] -= 1;
-			return;
-		}
+			case opcodes.EQUAL: {
+				this.accumulator = this.accumulator === this.memory[argument] ? 1 : 0;
+				break;
+			}
 
-		if (opcode === opcodes.EQUAL) {
-			this.accumulator = this.accumulator === this.memory[argument] ? 1 : 0;
-			return;
-		}
+			case opcodes.LESS: {
+				this.accumulator = this.accumulator < this.memory[argument] ? 1 : 0;
+				break;
+			}
 
-		if (opcode === opcodes.LESS) {
-			this.accumulator = this.accumulator < this.memory[argument] ? 1 : 0;
-			return;
-		}
+			case opcodes.GREATER: {
+				this.accumulator = this.accumulator > this.memory[argument] ? 1 : 0;
+				break;
+			}
 
-		if (opcode === opcodes.GREATER) {
-			this.accumulator = this.accumulator > this.memory[argument] ? 1 : 0;
-			return;
-		}
+			case opcodes.AND: {
+				const a: 0 | 1 = this.accumulator === 0 ? 0 : 1;
+				const b: 0 | 1 = this.memory[argument] === 0 ? 0 : 1;
+				this.accumulator = a & b;
+				break;
+			}
 
-		if (opcode === opcodes.AND) {
-			const a = this.accumulator >= 1 ? 1 : 0;
-			const b = this.memory[argument] >= 1 ? 1 : 0;
-			this.accumulator = a & b;
-			return;
-		}
+			case opcodes.OR: {
+				const a: 0 | 1 = this.accumulator === 0 ? 0 : 1;
+				const b: 0 | 1 = this.memory[argument] === 0 ? 0 : 1;
+				this.accumulator = a | b;
+				break;
+			}
 
-		if (opcode === opcodes.OR) {
-			const a = this.accumulator >= 1 ? 1 : 0;
-			const b = this.memory[argument] >= 1 ? 1 : 0;
-			this.accumulator = a | b;
-			return;
-		}
+			case opcodes.XOR: {
+				const a: 0 | 1 = this.accumulator === 0 ? 0 : 1;
+				const b: 0 | 1 = this.memory[argument] === 0 ? 0 : 1;
+				this.accumulator = a ^ b;
+				break;
+			}
 
-		if (opcode === opcodes.XOR) {
-			const a = this.accumulator >= 1 ? 1 : 0;
-			const b = this.memory[argument] >= 1 ? 1 : 0;
-			this.accumulator = a ^ b;
-			return;
-		}
+			case opcodes.NOT: {
+				this.accumulator = this.memory[argument] === 0 ? 1 : 0;
+				break;
+			}
 
-		if (opcode === opcodes.NOT) {
-			this.accumulator = this.memory[argument] >= 1 ? 0 : 1;
-			return;
-		}
+			case opcodes.JUMP: {
+				const value: number = argument - 1;
+				if (this.debug) this.log(`JUMP, ${argument} (${this.counter} => ${value})`);
+				this.counter = value;
+				break;
+			}
 
-		if (opcode === opcodes.JUMP) {
-			this.counter = argument - 1;
-			return;
+			case opcodes.CLEAN: {
+				if (this.debug) this.log(`CLEAN, ${argument}`);
+				this.memory[argument] = 0;
+				break;
+			}
 		}
+	}
 
-		if (opcode === opcodes.CLEAN) {
-			this.memory[argument] = 0;
-			return;
-		}
+	/**
+	 * Show info message
+	 * @param message Info message
+	 */
+	private info(message: string): void {
+		console.info(`tiQ [${Date.now()}]`, message);
+	}
 
-		if (this.safe) throw new VMError(`Invalid opcode "${opcode}"`);
+	/**
+	 * Show log message
+	 * @param message Log message
+	 */
+	private log(message: string): void {
+		console.log(`tiQ [${Date.now()}]`, message);
+	}
+
+	/**
+	 * Show warning message
+	 * @param message Warning message
+	 */
+	private warn(message: string): void {
+		console.warn(`tiQ [${Date.now()}]`, message);
 	}
 }
 
@@ -210,4 +282,3 @@ export class VMError extends Error {
 		if (typeof cause === 'string' || typeof cause === 'number') this.message = `${message}: ${cause}`;
 	}
 }
-

@@ -4,6 +4,8 @@ START
 
     POINT:
 
+    LOAD, 1
+    ADD, 5
     
     GOTO POINT
 
