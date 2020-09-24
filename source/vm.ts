@@ -4,14 +4,11 @@ interface VMConfig {
 	memory: ArrayBuffer;
 }
 
-const memoryAmount = 4096;
-const registersAmount = 16;
-
 // Opcodes for VM instructions
 export const opcodes = {
 	NOTHING: 0,
 	LOAD: 1,
-	STORE: 2,
+	SAVE: 2,
 	ADD: 3,
 	SUBSTRACT: 4,
 	INCREASE: 5,
@@ -32,168 +29,163 @@ export const opcodes = {
  * Tiny virtual machine written in TypeScript
  */
 export default class VM {
-
 	public safe: boolean = true;
 	public debug: boolean = false;
 
+	public running: boolean = false;
 	public counter: number = 0;
+	public accumulator: number = 0;
+	public memory: Uint16Array = new Uint16Array(4096);
 
-	/**
-	 * Memory ( 0 - 2047 ) 2048
-	 * Input ( 2048 - 2039 ) 8
-	 * Video ( 2040 - 3063 ) 1024
-	 * Unused Memory ( 3064 - 2047 )
-	 */
-	public memory: Uint16Array = new Uint16Array(memoryAmount);
-
-	/**
-	 * Arithmetic Logic Unit ( 0 ) 1
-	 * Counter Unit ( 1 ) 1
-	 * Status Unit ( 2 ) 1
-	 */
-	public registers: Uint8Array = new Uint8Array(registersAmount)
-
-	/**
-	 * Instructions Memory ( 0 - 2047 ) 2048
-	 * Storage Memory ( 2048 - 2559 ) 512
-	 *
-	 * Arithmetic-Logic Unit ( 2560 ) 1
-	 * Logic Unit ( 2561 ) 1
-	 * Counter Unit ( 2562 ) 1
-	 * State Unit ( 2563 ) 1
-	 *
-	 * Unused memory ( 2564 - 3061 )
-	 *
-	 * Input ( 3062 - 3070 ) 8
-	 * Video ( 3071 - 4095 ) 1024
-	 *
-	 * TOTAL: 4096 ( 8kb )
-	 */
+	private loop: number;
 
 	constructor(config?: Partial<VMConfig>) {
 		this.reset();
 	}
 
-	public load(buffer: ArrayBuffer): void {
-		this.memory = new Uint16Array(memoryAmount);
+	public load(data: Uint16Array): void {
+		this.memory = data;
 	}
 
 	public reset() {
-		this.memory = new Uint16Array(memoryAmount);
+		this.counter = 0;
+		this.accumulator = 0;
+		this.memory = new Uint16Array(4096);
 	}
 
-	public start() {
-		this.memory[2563] = 1;
-		setTimeout(() => this.execute());
+	public start(): void {
+		this.running = true;
+		this.step();
 	}
 
 	public stop() {
-		this.memory[2563] = 0;
+		this.running = false;
+		clearTimeout(this.loop);
 	}
 
-	public set(adress: number, value: number): void {
-		if (this.safe) {
-			if (value < 0) value = 0;
-			if (value >= this.size) value = this.size;
+	public step(): void {
+		this.counter += 1;
+		if (this.counter >= 4096) this.counter = 0;
 
-			for (let i = 0; i < this.size; i++) {
-				const opcode = i;
-				
-			}
-		}
-
-		this.memory[adress] = value;
-	}
-
-	public get(adress: number): number {
-		return this.memory[adress];
-	}
-
-	public execute(): void {
-		const {
-			NOTHING,
-			LOAD,
-			STORE,
-			ADD,
-			SUBSTRACT,
-			INCREASE,
-			DECREASE,
-			EQUAL,
-			LESS,
-			GREATER,
-			AND,
-			OR,
-			XOR,
-			NOT,
-			JUMP,
-			CLEAN,
-		} = opcodes;
-
-		const counter = this.memory[2562];
-		const instruction = this.memory[counter];
-
-		const opcode: number = Math.floor(instruction / this.size);
-		const value: number = Math.floor(instruction % this.size);
+		const instruction = this.fetch();
+		const { opcode, argument } = this.decode(instruction);
 
 		if (this.debug) {
-
-		}
-		
-		switch (opcode) {
-			case NOTHING:
-
-				break;
-
-			case LOAD:
-				break;
-			case STORE:
-				break;
-			case ADD:
-				break;
-
-			case SUBSTRACT:
-				break;
-
-			case INCREASE:
-				break;
-
-			case DECREASE:
-				break;
-
-			case EQUAL:
-				break;
-
-			case LESS:
-				break;
-
-			case GREATER:
-				break;
-
-			case AND:
-				break;
-
-			case OR:
-				break;
-
-			case XOR:
-				break;
-
-			case NOT:
-				break;
-
-			case JUMP:
-				break;
-
-			case CLEAN:
-				break;
-
-			default:
-				throw new VMError(`Invalid opcode "${opcode}"`);
+			console.log(`Executing instruction "${instruction}"`, `Opcode: "${opcode}"`, `Argument: "${argument}"`);
 		}
 
-		this.memory[2562] += 1;
-		if (this.memory[2562] >= this.size) this.memory[2562] = 0;
-		if (this.memory[2563]) setTimeout(() => this.execute());
+		this.execute(opcode, argument);
+
+		if (this.running) this.loop = setTimeout(() => this.step());
+	}
+
+	private fetch(): number {
+		const current = this.counter;
+		return this.memory[current];
+	}
+
+	private decode(instruction: number): { opcode: number; argument: number } {
+		const opcode: number = Math.floor(instruction / 4096);
+		const argument: number = Math.floor(instruction % 4096);
+		return { opcode, argument };
+	}
+
+	private execute(opcode: number, argument: number) {
+		// Clamp argument
+		if (this.safe) {
+			if (argument > 4095) argument = 4095;
+			if (argument < 0) argument = 0;
+		}
+
+		if (opcode === opcodes.NOTHING) {
+			this.running = false;
+			this.counter = 0;
+			this.accumulator = 0;
+			return;
+		}
+
+		if (opcode === opcodes.LOAD) {
+			this.accumulator = this.memory[argument];
+			return;
+		}
+
+		if (opcode === opcodes.SAVE) {
+			this.memory[argument] = this.accumulator;
+			return;
+		}
+
+		if (opcode === opcodes.ADD) {
+			this.accumulator += this.memory[argument];
+			return;
+		}
+
+		if (opcode === opcodes.SUBSTRACT) {
+			this.accumulator -= this.memory[argument];
+			return;
+		}
+
+		if (opcode === opcodes.INCREASE) {
+			this.memory[argument] += 1;
+			return;
+		}
+
+		if (opcode === opcodes.DECREASE) {
+			this.memory[argument] -= 1;
+			return;
+		}
+
+		if (opcode === opcodes.EQUAL) {
+			this.accumulator = this.accumulator === this.memory[argument] ? 1 : 0;
+			return;
+		}
+
+		if (opcode === opcodes.LESS) {
+			this.accumulator = this.accumulator < this.memory[argument] ? 1 : 0;
+			return;
+		}
+
+		if (opcode === opcodes.GREATER) {
+			this.accumulator = this.accumulator > this.memory[argument] ? 1 : 0;
+			return;
+		}
+
+		if (opcode === opcodes.AND) {
+			const a = this.accumulator >= 1 ? 1 : 0;
+			const b = this.memory[argument] >= 1 ? 1 : 0;
+			this.accumulator = a & b;
+			return;
+		}
+
+		if (opcode === opcodes.OR) {
+			const a = this.accumulator >= 1 ? 1 : 0;
+			const b = this.memory[argument] >= 1 ? 1 : 0;
+			this.accumulator = a | b;
+			return;
+		}
+
+		if (opcode === opcodes.XOR) {
+			const a = this.accumulator >= 1 ? 1 : 0;
+			const b = this.memory[argument] >= 1 ? 1 : 0;
+			this.accumulator = a ^ b;
+			return;
+		}
+
+		if (opcode === opcodes.NOT) {
+			this.accumulator = this.memory[argument] >= 1 ? 0 : 1;
+			return;
+		}
+
+		if (opcode === opcodes.JUMP) {
+			this.counter = argument - 1;
+			return;
+		}
+
+		if (opcode === opcodes.CLEAN) {
+			this.memory[argument] = 0;
+			return;
+		}
+
+		if (this.safe) throw new VMError(`Invalid opcode "${opcode}"`);
 	}
 }
 
@@ -218,3 +210,4 @@ export class VMError extends Error {
 		if (typeof cause === 'string' || typeof cause === 'number') this.message = `${message}: ${cause}`;
 	}
 }
+
