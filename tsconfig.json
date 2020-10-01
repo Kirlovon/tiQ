@@ -1,0 +1,12 @@
+
+ {
+    "compilerOptions": {
+        "module": "UMD",
+        "strict": true,
+        "allowJs": true,
+        "outDir": "./web",
+        "target": "ES2015",
+        "noImplicitAny": true,
+        "lib": ["ES2015", "DOM", "ES2015.Promise"],
+    }
+}

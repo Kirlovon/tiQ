@@ -1,0 +1,101 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100vh;
+    color: white;
+    font-family: monospace;
+    background-color: rgb(30, 30, 30);
+}
+
+
+.console {
+    top: 45%;
+    left: 50%;
+    display: block;
+    position: fixed;
+    border-radius: 16px;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(145deg, #a8a8a8, #303030);
+    box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.5), inset 2px 2px 0 0 rgba(255, 255, 255, 0.1), inset -2px -2px 0 0 rgba(0, 0, 0, 0.1);
+}
+
+.buttons {
+    text-align: right;
+    width: 100%;
+    height: auto;
+    padding: 16px 32px;
+    min-height: 64px;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    background-color: rgba(0, 0, 0, 0.25);
+}
+
+.info {
+    left: 32px;
+    bottom: 32px;
+    position: fixed;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 8px black;
+}
+
+.screen {
+    margin: 32px;
+    height: auto;
+    width: auto;
+    display: flex;
+    border-radius: 4px;
+    justify-content: center;
+    background-color: #0a0a0a;
+    box-shadow: -1px -1px 0 1px rgba(0, 0, 0, 0.1), 1px 1px 0 1px rgba(255, 255, 255, 0.1);
+
+}
+
+#display {
+    margin: 8px;
+    width: 256px;
+    height: 256px;
+    display: block;
+    background-color: black;
+}
+
+canvas {
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+button {
+    cursor: pointer;
+    color: rgb(75, 75, 75);
+    font-size: 11px;
+    font-weight: bold;
+    padding: 8px 12px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    box-shadow: 1px 2px 8px -3px black;
+    background: linear-gradient(0deg, rgb(170, 170, 170), rgb(190, 190, 190));
+}
+
+button:hover {
+    color: rgb(80, 80, 80);
+    background: linear-gradient(0deg, rgb(180, 180, 180), rgb(200, 200, 200));
+}
+
+button:active {
+    box-shadow: none;
+    color: rgb(60, 60, 60);
+    background: linear-gradient(0deg, rgb(140, 140, 140), rgb(160, 160, 160));
+}
+
+button, button:active, button:focus {
+    outline: none;
+    border: none;
+}

@@ -10,24 +10,24 @@ export const opcodes = {
 	SAVE: 2,
 	ADD: 3,
 	SUBSTRACT: 4,
-	INCREASE: 5,
-	DECREASE: 6,
-	EQUAL: 7,
-	LESS: 8,
-	GREATER: 9,
-	AND: 10,
-	OR: 11,
-	XOR: 12,
-	NOT: 13,
-	JUMP: 14,
-	CLEAN: 15,
+	EQUAL: 5,
+	LESS: 6,
+	GREATER: 7,
+	AND: 8,
+	OR: 9,
+	JUMP: 10,
+	TRUE: 11,
+	FALSE: 12,
+	RANDOM: 13,
+	INPUT: 14,
+	DISPLAY: 15,
 };
 
 /**
  * # tiQ VM
  * Tiny virtual machine written in TypeScript
  */
-export default class VM {
+export class VM {
 	public safe: boolean = true;
 	public debug: boolean = false;
 
@@ -36,23 +36,25 @@ export default class VM {
 	public accumulator: number = 0;
 	public memory: Uint16Array = new Uint16Array(4096);
 
-	private loop: number;
+	public display: Uint8Array = new Uint8Array(1024);
+	public input: Uint8Array = new Uint8Array(8);
+
+	private loop?: number;
 
 	constructor(config: Partial<VMConfig> = {}) {
 		if (typeof config !== 'object') throw new VMError('Config must be an object')
 		if (typeof config.safe === 'boolean') this.safe = config.safe;
 		if (typeof config.debug === 'boolean') this.debug = config.debug;
-		this.reset();
 	}
 
 	/**
 	 * Start VM loop
 	 */
 	public start(): void {
-		if (this.debug) this.info('VM is started');
 		clearTimeout(this.loop);
 		this.running = true;
 		this.loop = setTimeout(() => this.step());
+		if (this.debug) this.info('VM is started');
 	}
 
 	public load(data: Uint16Array): void {
@@ -63,31 +65,36 @@ export default class VM {
 	 * Reset VM memory
 	 */
 	public reset() {
-		if (this.debug) this.info('VM is reseted');
 		this.counter = 0;
 		this.accumulator = 0;
 		this.memory = new Uint16Array(4096);
+	 	this.display = new Uint8Array(1024);
+	 	this.input = new Uint8Array(8);
+
+		clearTimeout(this.loop);
+		if (this.debug) this.info('VM is reseted');
 	}
 
 	/**
 	 * Stop VM loop
 	 */
 	public stop() {
-		if (this.debug) this.info('VM is stopped');
 		this.running = false;
 		clearTimeout(this.loop);
+		if (this.debug) this.info('VM is stopped');
 	}
 
 	/**
 	 * Fetch, Decode and Execute one instruction from the memory
 	 */
 	public step(): void {
-		this.counter += 1;
 		if (this.counter > 4095) this.counter = 0;
 
 		const instruction: number = this.fetch(this.counter);
 		const { opcode, argument } = this.decode(instruction);
 		this.execute(opcode, argument);
+
+		this.counter += 1;
 
 		if (this.running) this.loop = setTimeout(() => this.step());
 	}
@@ -127,7 +134,7 @@ export default class VM {
 	/**
 	 * Execute decoded VM instruction
 	 * @param opcode Opcode of the instruction
-	 * @param argument Number or address
+	 * @param argument Argument of the instruction
 	 */
 	private execute(opcode: number, argument: number) {
 		switch (opcode) {
@@ -154,7 +161,7 @@ export default class VM {
 				let value: number = this.accumulator + this.memory[argument];
 				if (this.safe && value > 4095) value = 4095; 
 				
-				if (this.debug) this.log(`ADD, ${argument} (${this.accumulator})`);
+				if (this.debug) this.log(`ADD, ${argument} (Accumulator: ${this.accumulator} => ${value})`);
 				this.accumulator = value;
 				break;
 			}
@@ -162,20 +169,8 @@ export default class VM {
 			case opcodes.SUBSTRACT: {
 				let value: number = this.accumulator - this.memory[argument];
 				if (this.safe && value < 0) value = 0; 
-				this.accumulator = value;
-				break;
-			}
 
-			case opcodes.INCREASE: {
-				let value: number = this.accumulator + 1;
-				if (this.safe && value > 4095) value = 4095;
-				this.accumulator = value;
-				break;
-			}
-
-			case opcodes.DECREASE: {
-				let value: number = this.accumulator - 1;
-				if (this.safe && value < 0) value = 0;
+				if (this.debug) this.log(`SUBSTRACT, ${argument} (Accumulator: ${this.accumulator} => ${value})`);
 				this.accumulator = value;
 				break;
 			}
@@ -209,28 +204,46 @@ export default class VM {
 				break;
 			}
 
-			case opcodes.XOR: {
-				const a: 0 | 1 = this.accumulator === 0 ? 0 : 1;
-				const b: 0 | 1 = this.memory[argument] === 0 ? 0 : 1;
-				this.accumulator = a ^ b;
-				break;
-			}
-
-			case opcodes.NOT: {
-				this.accumulator = this.memory[argument] === 0 ? 1 : 0;
-				break;
-			}
-
 			case opcodes.JUMP: {
 				const value: number = argument - 1;
-				if (this.debug) this.log(`JUMP, ${argument} (${this.counter} => ${value})`);
+				if (this.debug) this.log(`JUMP, ${argument} (Counter: ${this.counter} => ${argument})`);
 				this.counter = value;
 				break;
 			}
 
-			case opcodes.CLEAN: {
-				if (this.debug) this.log(`CLEAN, ${argument}`);
-				this.memory[argument] = 0;
+			case opcodes.TRUE: {
+				const value: number = argument - 1;
+				if (this.debug) this.log(`TRUE, ${argument} (Memory: ${this.memory[argument]} => 0)`);
+				if (this.accumulator !== 0) this.counter = value;
+				break;
+			}
+
+			case opcodes.FALSE: {
+				const value: number = argument - 1;
+				if (this.debug) this.log(`FALSE, ${argument} (Memory: ${this.memory[argument]} => 0)`);
+				if (this.accumulator === 0) this.counter = value;
+				break;
+			}
+
+			case opcodes.RANDOM: {
+				this.accumulator = Math.floor(Math.random() * (argument + 1));
+				break;
+			}
+
+			case opcodes.INPUT: {
+				const value: number = this.input[argument];
+				this.accumulator = value ? 1 : 0;
+				break;
+			}
+
+			case opcodes.DISPLAY: {
+				const x: number = Math.floor(argument / 128);
+				const slicedX: number = Math.floor(argument % 128);
+				const y: number = Math.floor(slicedX / 4);
+				const slicedY: number = Math.floor(slicedX % 4);
+				const color: number = Math.floor(slicedY / 1);
+				const address: number = (32 * y) + x;
+				this.display[address] = color;
 				break;
 			}
 		}
