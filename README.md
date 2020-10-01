@@ -1,5 +1,9 @@
-# tiQ
- Tiny 16bit [fantasy console](https://github.com/topics/fantasy-console) written in TypeScript
+<p align="center">
+	<img src="https://raw.githubusercontent.com/Kirlovon/tiQ/master/assets/logo.png" alt="tiQ Logo" width="256">
+</p>
+
+<h3 align="center">tiQ</h3>
+<p align="center"><i>Tiny 16bit fantasy console written in TypeScript</i></p>
 
 ## Specifications
 * Display: **32x32 Black & White**
@@ -30,17 +34,5 @@
 15. DISPLAY, x, y, color
 
 ## Assembly Syntax _(TODO)_
-
-61 440
-
-1111 01111 01111 01
-
-65 536
-
-
-63421 - DRAW, 15, 15, 1
-1981 - 15, 15, 1
-1981 / 128 = 15
-
-960
-1920
+* START
+* END

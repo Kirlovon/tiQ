@@ -80,19 +80,19 @@ button {
     border-radius: 4px;
     letter-spacing: 1px;
     text-transform: uppercase;
-    box-shadow: 1px 2px 8px -3px black;
+    box-shadow: 0px 2px 8px -4px black;
     background: linear-gradient(0deg, rgb(170, 170, 170), rgb(190, 190, 190));
 }
 
 button:hover {
     color: rgb(80, 80, 80);
-    background: linear-gradient(0deg, rgb(180, 180, 180), rgb(200, 200, 200));
+    background: linear-gradient(0deg, rgb(170, 170, 170), rgb(220, 220, 220));
 }
 
-button:active {
+button:active, .pressed {
     box-shadow: none;
     color: rgb(60, 60, 60);
-    background: linear-gradient(0deg, rgb(140, 140, 140), rgb(160, 160, 160));
+    background: linear-gradient(0deg, rgb(160, 160, 160), rgb(150, 150, 150));
 }
 
 button, button:active, button:focus {

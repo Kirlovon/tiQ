@@ -1,16 +1,21 @@
+dfgdf GOTOdfg 
+df 
+d
+fg
+df GOTOdfg
+
 START
 
-    INCLUDE "./test.tiq"
+
+    INCLUDE "./test.tiq" // Start
 
     POINT:
-
+ 
+	// dfdfg
     LOAD, 1
     ADD, 5
-    
+
     GOTO POINT
 
 END
 
-
-
-// Loop

@@ -1,6 +1,6 @@
 import { VM, opcodes } from './vm';
 
-const VMInstance = new VM({ debug: true, safe: true });
+const VMInstance = new VM({ debug: false, safe: true });
 
 /**
  * Load binary executable file
