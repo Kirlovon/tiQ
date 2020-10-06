@@ -1,6 +1,6 @@
 import { VM, opcodes } from './vm';
 
-const VMInstance = new VM({ debug: false, safe: true });
+const VMInstance = new VM({ debug: true, safe: true });
 
 /**
  * Load binary executable file
@@ -51,6 +51,7 @@ document.getElementById('load').onclick = async (event) => {
 
 document.getElementById('reset').onclick = async (event) => {
     VMInstance.reset();
+    VMInstance.stop();
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, width, height);
     

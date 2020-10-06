@@ -29,10 +29,31 @@
 11. TRUE, addressToJump
 12. FALSE, addressToJump
 
-13. RANDOM, maximum
+13. RANDOM
 14. INPUT, input address
 15. DISPLAY, x, y, color
 
 ## Assembly Syntax _(TODO)_
 * START
 * END
+
+* INCLUDE
+* POINT
+* GOTO
+
+* NOTHING
+* LOAD
+* SAVE
+* ADD
+* SUBSTRACT
+* EQUAL 
+* LESS
+* GREATER
+* AND
+* OR
+* JUMP
+* TRUE
+* FALSE
+* RANDOM
+* INPUT
+* DISPLAY

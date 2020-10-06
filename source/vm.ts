@@ -1,9 +1,3 @@
-interface VMConfig {
-	safe: boolean;
-	debug: boolean;
-}
-
-// Opcodes for VM instructions
 export const opcodes = {
 	NOTHING: 0,
 	LOAD: 1,
@@ -22,6 +16,11 @@ export const opcodes = {
 	INPUT: 14,
 	DISPLAY: 15,
 };
+
+interface VMConfig {
+	safe: boolean;
+	debug: boolean;
+}
 
 /**
  * # tiQ VM
@@ -57,7 +56,12 @@ export class VM {
 		if (this.debug) this.info('VM is started');
 	}
 
+	/**
+	 * Load executable data to the memory.
+	 * @param data Data to load.
+	 */
 	public load(data: Uint16Array): void {
+		// TODO: Validate data
 		this.memory = data;
 	}
 
@@ -226,7 +230,7 @@ export class VM {
 			}
 
 			case opcodes.RANDOM: {
-				this.accumulator = Math.floor(Math.random() * (argument + 1));
+				this.accumulator = Math.floor(Math.random() * 2);
 				break;
 			}
 

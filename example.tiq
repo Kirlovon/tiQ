@@ -1,21 +1,16 @@
-dfgdf GOTOdfg 
-df 
-d
-fg
-df GOTOdfg
+Simple example of the 
 
 START
 
+    INCLUDE "tiQ" // Start
 
-    INCLUDE "./test.tiq" // Start
-
-    POINT:
+    XXX:
  
 	// dfdfg
-    LOAD, 1
+    LoAD, 1
     ADD, 5
 
-    GOTO POINT
+    GOTO "XXX"
 
 END
 
