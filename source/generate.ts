@@ -45,5 +45,5 @@ function setPixel(x: number, y: number, color: number) {
 }
 
 console.log(setPixel(0, 0, 0))
-writeFileSync('./builded.bin', Buffer.from(memory.buffer));
+writeFileSync('./control.bin', Buffer.from(memory.buffer));
 

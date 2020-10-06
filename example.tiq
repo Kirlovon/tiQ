@@ -1,14 +1,15 @@
-Simple example of the 
+Simple example of the tiQ Assembler
 
 START
 
-    INCLUDE "tiQ" // Start
+    INCLUDE "tiQ" // Comment
 
     XXX:
  
-	// dfdfg
-    LoAD, 1
-    ADD, 5
+        // Another comment
+        LOAD, 1
+        ADD, 5
+        SAVE, 1
 
     GOTO "XXX"
 
