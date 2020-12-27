@@ -1,8 +1,9 @@
 import { opcodes } from './vm';
 
 interface Config {
-	debug: boolean;
-	import: (key: string) => string;
+	log: boolean;
+	safe: boolean;
+	minify: boolean;
 }
 
 interface Line {
@@ -12,12 +13,16 @@ interface Line {
 
 interface Token {
 	line: number;
-    type: string;
+	type: string;
 }
 
-interface IncludeToken extends Token {
-    type: 'INCLUDE';
-    path: string;
+interface FinishToken extends Token {
+	type: 'FINISH';
+}
+
+interface RawToken extends Token {
+	type: 'RAW';
+	value: number;
 }
 
 interface PointToken extends Token {
@@ -26,94 +31,157 @@ interface PointToken extends Token {
 }
 
 interface GotoToken extends Token {
-    type: 'GOTO';
-    point: string;
+	type: 'GOTO';
+	point: string;
+}
+
+interface DeclareToken extends Token {
+	type: 'DECLARE';
+	address: number;
+	value: number;
 }
 
 interface InstructionToken extends Token {
-    type: keyof typeof opcodes;
-    arguments: number[];
+	type: keyof typeof opcodes;
+	arguments: number[];
 }
 
-type Tokens = IncludeToken | PointToken | GotoToken | InstructionToken;
+type Tokens = Array<PointToken | GotoToken | InstructionToken | DeclareToken | RawToken | FinishToken>;
 
+const defaultConfig: Config = {
+	log: true,
+	safe: true,
+	minify: true
+}
+
+/**
+ * Compile source code to binary code.
+ * @param code Code to compile.
+ * @param config Compilation config.
+ */
 export function Compile(code: string, config: Partial<Config> = {}): Uint16Array {
-	const x = Parse(code);
-	console.log(x);
+	// Merge configs
+	config = { ...defaultConfig, ...config };
+	const { log, safe, minify } = config;
+	
+	const parsed: Line[] = Parse(code);
+	const tokenized: Tokens = Tokenize(parsed);
 
-	return new Uint16Array(4096);
-}
+	console.log(tokenized);
 
-function Parse(code: string, config: Partial<Config> = {}) {
-	// Split code by lines
-	let splits: string[] = code.split(/\r?\n/);
+	let tokens: Tokens = tokenized;
+	const points: [PointToken, number][] = [];
+	const declarations: DeclareToken[] = [];
 
-	// Remove comments
-	splits = splits.map(content => content.split('//')[0]);
-
-	// Convert lines to the objects
-	let lines: Line[] = splits.map((content, index) => ({ index, content }));
-
-	// Remove spaces
-	lines = lines.map(({ content, index }) => {
-		const formated: string = content.replace(/\s+/g, '');
-		return { index, content: formated };
+	// Find all declarations
+	tokens = tokens.filter(token => {
+		if (token.type !== 'DECLARE') return true;
+		declarations.push(token);
+		return false;
 	});
 
-	// Remove empty lines
-	lines = lines.filter(({ content }) => content !== '');
+	// Find all points
+	tokens = tokens.filter((token, index) => {
+		if (token.type !== 'POINT') return true;
+		points.push([token, index]);
+		return false;
+	});
 
-	// Uppercase content
-	lines = lines.map(({ content, index }) => {
-
-		// If line contain string argument
-		if (content.includes('"')) {
-			const splited: string[] = content.split('"');
-			splited[0] = splited[0].toUpperCase();
-			const formated: string = splited.join('"');
-			return { index, content: formated };
+	// Check instructions
+	if (safe) {
+		if (tokenized.length >= 4096) {
+			throw Error(
+				`[global] Code contains ${tokenized.length} instructions ( Maximum supported is 4096 )`
+			);
 		}
 
-		const formated: string = content.toUpperCase();
-		return { index, content: formated };
-	});
+		// Check if point names repeating
+		const names: Set<string> = new Set();
+		points.forEach(point => {
+			const { name, line } = point[0];
+			if (names.has(name)) throw new Error(`[line:${line}] Point "${name}" declared multiple times`);
+			names.add(name);
+		});
+	}
 
-	// Detect start and end of the code part
-	const start: number = lines.findIndex(({ content }) => content === 'START');
-	const end: number = lines.findIndex(({ content }) => content === 'END');
+	// Create binary array
+	const size: number = minify ? tokens.length : 4096;
+	const binary: Uint16Array = new Uint16Array(size);
 
-	// If start or end not found
-	if (start === -1) throw new Error();
-	if (end === -1) throw new Error();
+	// Convery tokens to instructions
+	for (let i = 0; i < tokens.length; i++) {
+		const token: Token = tokens[i];
+		
+		if (token.type === 'GOTO') {
+			// const instruction: number = (4096 * opcodes.JUMP);
+			binary[i] = instruction;
+			continue;
+		}
 
-	// Slice unused file parts
-	lines = lines.slice(start + 1, end);
+		if (token.type === 'FINISH') {
+			const instruction: number = 0;
+			binary[i] = instruction;
+			continue;
+		}
+		
+	}
+
+	console.log(points);
+	console.log(declarations);
+
+	console.log(tokens);
+	console.log(binary);
+
+	return binary;
+}
+
+function Tokenize(lines: Line[]): Tokens {
+	let tokens: Tokens = [];
 
 	// Tokenize code lines
-	let tokens: Tokens[] = lines.map(({ content, index }) => {	
+	tokens = lines.map(({ content, index }) => {
 		let line: number = index + 1;
+
+		if (content === 'FINISH') {
+			return { line, type: 'FINISH' };
+		}
 
 		if (content.endsWith(':')) {
 			const name: string = content.slice(0, -1).trim();
 			return { line, type: 'POINT', name };
-		}	
-
-		if (content.startsWith('INCLUDE')) {
-			const path: string = content.split('"')[1].trim();
-			return { line, type: 'INCLUDE', path };
-		}	
+		}
 
 		if (content.startsWith('GOTO')) {
 			const point: string = content.split('"')[1].trim();
 			return { line, type: 'GOTO', point };
 		}
 
+		if (content.startsWith('DECLARE')) {
+			const args: string[] = content.trim().split(',');
+			const address: number = parseInt(args[1]);
+			const value: number = parseInt(args[2]);
+
+			return { line, type: 'DECLARE', address, value };
+		}
+
+		if (isNumeric(content)) {
+			return { line, type: 'RAW', value: parseInt(content) };
+		}
+
 		const argument: string = content.split(',')[1].trim();
 		const parsed: number = parseInt(argument);
 
-		if (isNaN(parsed)) throw new Error();
-		if (parsed > 4095 || parsed < 0) throw new Error();
-		
+		if (isNaN(parsed)) throw new Error('1');
+		if (parsed > 4095 || parsed < 0) throw new Error('2');
+
+		if (content.startsWith('NOTHING')) {
+			return { line, type: 'NOTHING', arguments: [parsed] };
+		}
+
+		if (content.startsWith('DISPLAY')) {
+			return { line, type: 'DISPLAY', arguments: [parsed] };
+		}
+
 		if (content.startsWith('LOAD')) {
 			return { line, type: 'LOAD', arguments: [parsed] };
 		}
@@ -170,16 +238,99 @@ function Parse(code: string, config: Partial<Config> = {}) {
 			return { line, type: 'RANDOM', arguments: [] };
 		}
 
-		// if (content.startsWith('INPUT')) {
-		// 	return { line, type: 'INPUT', arguments: [] };
-		// }
+		if (content.startsWith('INPUT')) {
+			return { line, type: 'INPUT', arguments: [parsed] };
+		}
 
-		// if (content.startsWith('DISPLAY')) {
-		// 	return { line, type: 'DISPLAY', arguments: [] };
-		// }
-
+		console.log(content);
 		throw new Error();
-    });
+	});
 
 	return tokens;
+}
+
+
+/**
+ *
+ * @param code Code to parse
+ */
+function Parse(code: string): Line[] {
+	// Split code by lines
+	let splits: string[] = code.split(/\r?\n/);
+
+	// Remove comments
+	splits = splits.map(content => content.split('//')[0]);
+
+	// Convert lines to the objects
+	let lines: Line[] = splits.map((content, index) => ({ index, content }));
+
+	// Remove spaces
+	lines = lines.map(({ content, index }) => {
+		const formated: string = content.replace(/\s+/g, '');
+		return { index, content: formated };
+	});
+
+	// Remove empty lines
+	lines = lines.filter(({ content }) => content !== '');
+
+	// Uppercase content
+	lines = lines.map(({ content, index }) => {
+		// If line contain string argument
+		if (content.includes('"')) {
+			const splited: string[] = content.split('"');
+			splited[0] = splited[0].toUpperCase();
+			const formated: string = splited.join('"');
+			return { index, content: formated };
+		}
+
+		const formated: string = content.toUpperCase();
+		return { index, content: formated };
+	});
+
+	// Detect start and end of the code part
+	const start: number = lines.findIndex(({ content }) => content === 'START');
+	const end: number = lines.findIndex(({ content }) => content === 'END');
+
+	// If start or end not found
+	if (start === -1) throw new Error();
+	if (end === -1) throw new Error();
+
+	// Slice unused file parts
+	lines = lines.slice(start + 1, end);
+
+	return lines;
+}
+
+/**
+ * Check if string is numeric
+ * @param value String that contains number
+ */
+function isNumeric(value: string): boolean {
+	return /^\d+$/.test(value);
+}
+
+
+/** Custom compiler error */
+export class CompilerError extends Error {
+	public name: string = 'CompilerError';
+	public message: string;
+	public cause: any;
+	public stack: string | undefined;
+
+	public line: number = 0;
+	public global: boolean = false
+
+	/**
+	 * Error initialization.
+	 * @param message Error message.
+	 * @param cause Cause of the error.
+	 */
+	constructor(message: string, cause?: any) {
+		super(message);
+		Error.captureStackTrace(this, CompilerError);
+
+		this.message = message;
+		if (cause) this.cause = cause;
+		if (typeof cause === 'string' || typeof cause === 'number') this.message = `${message}: ${cause}`;
+	}
 }

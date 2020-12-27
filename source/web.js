@@ -1,6 +1,10 @@
-import { VM, opcodes } from './vm';
+import { VM } from './vm.ts';
 
 const VMInstance = new VM({ debug: true, safe: true });
+
+const canvas = document.getElementById('display');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
 
 /**
  * Load binary executable file
@@ -18,6 +22,10 @@ function loadExecutable() {
     });
 }
 
+/**
+ * Parse binary file
+ * @param file Loaded file to parse
+ */
 function parseExecutable(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -30,46 +38,9 @@ function parseExecutable(file) {
     });
 }
 
-const canvas = document.getElementById('display');
-const ctx = canvas.getContext('2d');
-ctx.imageSmoothingEnabled = false;
-
-const height = 32;
-const width = 32;
-
-document.getElementById('load').onclick = async (event) => {
-    const executable = await loadExecutable();
-    const parsed = await parseExecutable(executable);
-
-    console.log(parsed);
-
-    VMInstance.load(parsed);
-    VMInstance.start();
-    processDisplay();
-}
-
-
-document.getElementById('reset').onclick = async (event) => {
-    VMInstance.reset();
-    VMInstance.stop();
-    ctx.fillStyle = 'black';
-    ctx.fillRect(0, 0, width, height);
-    
-}
-
-document.getElementById('start').onclick = async (event) => {
-    VMInstance.start();
-    processDisplay();
-}
-
-document.getElementById('stop').onclick = async (event) => {
-    VMInstance.stop();
-    processDisplay();
-}
-
 function processDisplay() {
-    for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
+    for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
             const address = (32 * y) + x;
             const enabled = VMInstance.display[address] === 0 ? false : true;
 
@@ -81,7 +52,7 @@ function processDisplay() {
     if (VMInstance.running) requestAnimationFrame(processDisplay);
 }
 
-document.onkeydown = (event) => {
+window.addEventListener('keydown', (event) => {
     switch (event.code) {
         case 'ArrowUp':
             VMInstance.input[0] = 1;
@@ -102,9 +73,9 @@ document.onkeydown = (event) => {
             VMInstance.input[5] = 1;
             break;
     }
-}
+});
 
-document.onkeyup = (event) => {
+window.addEventListener('keyup', (event) => {
     switch (event.code) {
         case 'ArrowUp':
             VMInstance.input[0] = 0;
@@ -125,4 +96,34 @@ document.onkeyup = (event) => {
             VMInstance.input[5] = 0;
             break;
     }
-}
+});
+
+document.getElementById('load').addEventListener('click', async (event) => {
+    const executable = await loadExecutable();
+    const parsed = await parseExecutable(executable);
+
+    VMInstance.load(parsed);
+    VMInstance.start();
+    processDisplay();
+});
+
+document.getElementById('reset').addEventListener('click', () => {
+    VMInstance.stop();
+    VMInstance.reset();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+});
+
+document.getElementById('start').addEventListener('click', () => {
+    VMInstance.start();
+    processDisplay();
+});
+
+document.getElementById('stop').addEventListener('click', () => {
+    VMInstance.stop();
+    processDisplay();
+});
+
+document.getElementById('step').addEventListener('click', () => {
+    VMInstance.step();
+    processDisplay();
+});

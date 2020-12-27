@@ -22,6 +22,7 @@ interface VMConfig {
 	debug: boolean;
 }
 
+// TODO: Add events ( ondraw, onstep )
 /**
  * # tiQ VM
  * Tiny virtual machine written in TypeScript
@@ -50,9 +51,9 @@ export class VM {
 	 * Start VM loop
 	 */
 	public start(): void {
-		clearTimeout(this.loop);
+		clearInterval(this.loop);
 		this.running = true;
-		this.loop = setTimeout(() => this.step());
+		this.loop = setInterval(() => this.step());
 		if (this.debug) this.info('VM is started');
 	}
 
@@ -75,7 +76,7 @@ export class VM {
 	 	this.display = new Uint8Array(1024);
 	 	this.input = new Uint8Array(8);
 
-		clearTimeout(this.loop);
+		clearInterval(this.loop);
 		if (this.debug) this.info('VM is reseted');
 	}
 
@@ -84,7 +85,7 @@ export class VM {
 	 */
 	public stop() {
 		this.running = false;
-		clearTimeout(this.loop);
+		clearInterval(this.loop);
 		if (this.debug) this.info('VM is stopped');
 	}
 
@@ -99,8 +100,6 @@ export class VM {
 		this.execute(opcode, argument);
 
 		this.counter += 1;
-
-		if (this.running) this.loop = setTimeout(() => this.step());
 	}
 
 	/**

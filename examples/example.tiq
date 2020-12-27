@@ -1,15 +1,19 @@
 Simple example of the tiQ Assembler
 
+
 START
 
-    INCLUDE "tiQ" // Comment
-
+    DECLARE, 4095, 123 // Declare number on address
+    
     XXX:
  
         // Another comment
         LOAD, 1
         ADD, 5
         SAVE, 1
+        DISPLAY, 12, 34, 1
+        4566
+        NOTHING, 10
 
     GOTO "XXX"
 

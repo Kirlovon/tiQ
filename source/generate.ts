@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from 'fs';
 
-let memory = new Uint16Array(4096);
+let memory = new Uint16Array(1302);
 
 memory[0] = generateInstruction(14, 0);
 memory[1] = generateInstruction(11, 1000);
@@ -45,5 +45,5 @@ function setPixel(x: number, y: number, color: number) {
 }
 
 console.log(setPixel(0, 0, 0))
-writeFileSync('./control.bin', Buffer.from(memory.buffer));
+writeFileSync('./control2.bin', Buffer.from(memory.buffer));
 
