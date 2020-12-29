@@ -1,21 +1,15 @@
 Simple example of the tiQ Assembler
 
+begin
 
-START
+    xxx:
 
-    DECLARE, 4095, 123 // Declare number on address
-    
-    XXX:
- 
-        // Another comment
-        LOAD, 1
-        ADD, 5
-        SAVE, 1
-        DISPLAY, 12, 34, 1
-        4566
-        NOTHING, 10
+        display, 15, 15, 1
+        display, 14, 15, 1
+        display, 14, 14, 1
+        display, 13, 14, 1
 
-    GOTO "XXX"
+    goto, xxx
 
-END
+end
 

@@ -1,7 +1,6 @@
-import { VM } from './vm.ts';
+import { VM } from './vm';
 
 const VMInstance = new VM({ debug: true, safe: true });
-
 const canvas = document.getElementById('display');
 const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;

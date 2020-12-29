@@ -6,7 +6,7 @@
         "allowJs": true,
         "outDir": "./web",
         "target": "ES2015",
-        "noImplicitAny": true,
+        "noImplicitAny": false,
         "lib": ["ES2015", "DOM", "ES2015.Promise"],
     }
 }

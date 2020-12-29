@@ -1,58 +1,69 @@
 import { opcodes } from './vm';
 
-interface Config {
-	log: boolean;
-	safe: boolean;
-	minify: boolean;
-}
-
+// Code line structure
 interface Line {
 	index: number;
 	content: string;
 }
 
-interface Token {
+// Finish token structure
+interface FinishToken {
 	line: number;
-	type: string;
+	type: 'finish';
 }
 
-interface FinishToken extends Token {
-	type: 'FINISH';
-}
-
-interface RawToken extends Token {
-	type: 'RAW';
-	value: number;
-}
-
-interface PointToken extends Token {
-	type: 'POINT';
+// Point token structure
+interface PointToken {
+	line: number;
+	type: 'point';
 	name: string;
 }
 
-interface GotoToken extends Token {
-	type: 'GOTO';
+// Goto token structure
+interface GotoToken {
+	line: number;
+	type: 'goto';
 	point: string;
 }
 
-interface DeclareToken extends Token {
-	type: 'DECLARE';
+// Declare token structure
+interface DeclareToken {
+	line: number;
+	type: 'declare';
+	value: number;
 	address: number;
+}
+
+// Display token structure
+interface DisplayToken {
+	line: number;
+	type: 'display';
+	x: number;
+	y: number;
+	color: number;
+}
+
+// All other instructions token
+interface InstructionToken {
+	line: number;
+	type: 'raw' | 'nothing' | 'load' | 'save' | 'add' | 'substract' | 'equal' | 'less' | 'greater' | 'and' | 'or' | 'jump' | 'true' | 'false' | 'random' | 'input';
 	value: number;
 }
 
-interface InstructionToken extends Token {
-	type: keyof typeof opcodes;
-	arguments: number[];
+// List of tokens
+type Tokens = Array<PointToken | DisplayToken | GotoToken | DeclareToken | FinishToken | InstructionToken>;
+
+// Compilator configuration
+interface Config {
+	safe: boolean;
+	minify: boolean;
 }
 
-type Tokens = Array<PointToken | GotoToken | InstructionToken | DeclareToken | RawToken | FinishToken>;
-
+// Default config
 const defaultConfig: Config = {
-	log: true,
 	safe: true,
-	minify: true
-}
+	minify: true,
+};
 
 /**
  * Compile source code to binary code.
@@ -60,201 +71,419 @@ const defaultConfig: Config = {
  * @param config Compilation config.
  */
 export function Compile(code: string, config: Partial<Config> = {}): Uint16Array {
+	const binary: Uint16Array = new Uint16Array(4096);
+
 	// Merge configs
 	config = { ...defaultConfig, ...config };
-	const { log, safe, minify } = config;
-	
+	const { safe, minify } = config;
+
 	const parsed: Line[] = Parse(code);
 	const tokenized: Tokens = Tokenize(parsed);
 
-	console.log(tokenized);
-
 	let tokens: Tokens = tokenized;
-	const points: [PointToken, number][] = [];
 	const declarations: DeclareToken[] = [];
+	const points: Map<string, { line: number; address: number }> = new Map();
 
 	// Find all declarations
 	tokens = tokens.filter(token => {
-		if (token.type !== 'DECLARE') return true;
+		if (token.type !== 'declare') return true;
+		const { address, value, line } = token;
+
+		// Validate declarations
+		if (address > 4095 || address < 0) throw new CompilationError(`Address "${address}" is out of range`, line);
+		if (value > 4095 || value < 0) throw new CompilationError(`Value "${value}" is out of range`, line);
+
 		declarations.push(token);
+
 		return false;
 	});
 
 	// Find all points
 	tokens = tokens.filter((token, index) => {
-		if (token.type !== 'POINT') return true;
-		points.push([token, index]);
+		if (token.type !== 'point') return true;
+		const { name, line } = token;
+
+		// Check if point is already declared
+		if (safe && points.has(name)) throw new CompilationError(`Point "${name}" declared multiple times`, line);
+
+		points.set(name, {
+			line: line,
+			address: index,
+		});
+
 		return false;
 	});
 
 	// Check instructions
 	if (safe) {
 		if (tokenized.length >= 4096) {
-			throw Error(
-				`[global] Code contains ${tokenized.length} instructions ( Maximum supported is 4096 )`
-			);
+			throw new CompilationError(`Code contains ${tokenized.length} instructions ( Maximum supported is 4096 )`);
 		}
-
-		// Check if point names repeating
-		const names: Set<string> = new Set();
-		points.forEach(point => {
-			const { name, line } = point[0];
-			if (names.has(name)) throw new Error(`[line:${line}] Point "${name}" declared multiple times`);
-			names.add(name);
-		});
 	}
 
-	// Create binary array
-	const size: number = minify ? tokens.length : 4096;
-	const binary: Uint16Array = new Uint16Array(size);
+	console.log(tokens)
 
 	// Convery tokens to instructions
 	for (let i = 0; i < tokens.length; i++) {
-		const token: Token = tokens[i];
-		
-		if (token.type === 'GOTO') {
-			// const instruction: number = (4096 * opcodes.JUMP);
-			binary[i] = instruction;
+		const token = tokens[i] as GotoToken | DisplayToken | FinishToken | InstructionToken;
+
+		// Finish instruction
+		if (token.type === 'finish') {
+			binary[i] = 0;
 			continue;
 		}
 
-		if (token.type === 'FINISH') {
-			const instruction: number = 0;
-			binary[i] = instruction;
+		// Goto instruction
+		if (token.type === 'goto') {
+			const point = points.get(token.point);
+			if (typeof point === 'undefined') throw new CompilationError(`Point "${token.point}" is not found`, token.line);
+
+			binary[i] = 4096 * opcodes.JUMP + point.address;
 			continue;
 		}
-		
+
+		// Raw instruction
+		if (token.type === 'raw') {
+			if (token.value > 65535 || token.value < 0) throw new CompilationError(`Instruction "${token.value}" is not valid`, token.line);
+			binary[i] = token.value;
+			continue;
+		}
+
+		// Empty instruction
+		if (token.type === 'nothing') {
+			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Instruction value "${token.value}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.NOTHING + token.value;
+			continue;
+		}
+
+		// Empty instruction
+		if (token.type === 'load') {
+			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.LOAD + token.value;
+			continue;
+		}
+
+		// Save instruction
+		if (token.type === 'save') {
+			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.SAVE + token.value;
+			continue;
+		}
+
+		// Add instruction
+		if (token.type === 'add') {
+			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.ADD + token.value;
+			continue;
+		}
+
+		// Save instruction
+		if (token.type === 'substract') {
+			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.SUBSTRACT + token.value;
+			continue;
+		}
+
+		// Equal instruction
+		if (token.type === 'equal') {
+			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.EQUAL + token.value;
+			continue;
+		}
+
+		// Less instruction
+		if (token.type === 'less') {
+			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.LESS + token.value;
+			continue;
+		}
+
+		// Greater instruction
+		if (token.type === 'greater') {
+			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.GREATER + token.value;
+			continue;
+		}
+
+		// And instruction
+		if (token.type === 'and') {
+			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.AND + token.value;
+			continue;
+		}
+
+		// Or instruction
+		if (token.type === 'or') {
+			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.OR + token.value;
+			continue;
+		}
+
+		// Jump instruction
+		if (token.type === 'jump') {
+			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.JUMP + token.value;
+			continue;
+		}
+
+		// True instruction
+		if (token.type === 'true') {
+			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.TRUE + token.value;
+			continue;
+		}
+
+		// False instruction
+		if (token.type === 'false') {
+			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.FALSE + token.value;
+			continue;
+		}
+
+		// Random instruction
+		if (token.type === 'random') {
+			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.RANDOM + token.value;
+			continue;
+		}
+
+		// Input instruction
+		if (token.type === 'input') {
+			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.INPUT + token.value;
+			continue;
+		}
+
+		// Display instruction
+		if (token.type === 'display') {
+			console.log(111);
+			const { x, y, color, line } = token;
+			if (x > 31 || x < 0) throw new CompilationError(`Value "${x}" is out of range`, line);
+			if (y > 31 || y < 0) throw new CompilationError(`Value "${y}" is out of range`, line);
+			if (color > 1 || color < 0) throw new CompilationError(`Value "${color}" is out of range`, line);
+
+			binary[i] = 4096 * opcodes.DISPLAY + 128 * x + 4 * y + color;
+			continue;
+		}
 	}
 
-	console.log(points);
-	console.log(declarations);
+	// Declarations
+	for (let i = 0; i < declarations.length; i++) {
+		const { address, value, line }: DeclareToken = declarations[i];
 
-	console.log(tokens);
-	console.log(binary);
+		// If address already contains the instruction
+		if (safe && binary[address] !== 0) throw new CompilationError(`Address "${address}" already contains the instructions`, line);
+
+		binary[address] = value;
+	}
+
+	// Minify executable code
+	if (minify) {
+		const size: number = binary.length - 1;
+		let end: number = size;
+
+		// Impossible to minify
+		if (binary[size] !== 0) return binary;
+		
+		// Detect ending 
+		for (let i = size; i >= 0; i--) {
+			if (binary[i] === 0) continue;
+			end = i + 1;
+			break;
+		}
+
+		// Remove unused space
+		const minified: Uint16Array = binary.filter((instruction, index) => {
+			if (index <= end) return true;
+			return false
+		});
+
+		return minified;
+	}
 
 	return binary;
 }
 
+/**
+ * Tokenization. Convert lines of code to structures.
+ * @param lines Lines of code.
+ */
 function Tokenize(lines: Line[]): Tokens {
 	let tokens: Tokens = [];
 
 	// Tokenize code lines
-	tokens = lines.map(({ content, index }) => {
+	for (let i = 0; i < lines.length; i++) {
+		const { content, index } = lines[i];
 		let line: number = index + 1;
 
-		if (content === 'FINISH') {
-			return { line, type: 'FINISH' };
+		// Get arguments
+		const args: string[] = content.split(',').slice(1);
+
+		// Finish
+		if (content === 'finish') {
+			tokens.push({ line, type: 'finish' });
+			continue;
 		}
 
-		if (content.endsWith(':')) {
-			const name: string = content.slice(0, -1).trim();
-			return { line, type: 'POINT', name };
+		// Point
+		if (/^\w+:$/.test(content)) {
+			const name: string = content.slice(0, -1);
+			tokens.push({ line, type: 'point', name });
+			continue;
 		}
 
-		if (content.startsWith('GOTO')) {
-			const point: string = content.split('"')[1].trim();
-			return { line, type: 'GOTO', point };
+		// Goto
+		if (/^goto,\w+$/.test(content)) {
+			const point: string = args[0];
+			tokens.push({ line, type: 'goto', point });
+			continue;
 		}
 
-		if (content.startsWith('DECLARE')) {
-			const args: string[] = content.trim().split(',');
-			const address: number = parseInt(args[1]);
-			const value: number = parseInt(args[2]);
-
-			return { line, type: 'DECLARE', address, value };
+		// Declare
+		if (/^declare,\d+,\d+$/.test(content)) {
+			const address: number = parseInt(args[0]);
+			const value: number = parseInt(args[1]);
+			tokens.push({ line, type: 'declare', address, value });
+			continue;
 		}
 
-		if (isNumeric(content)) {
-			return { line, type: 'RAW', value: parseInt(content) };
+		// Raw numbers
+		if (/^\d+$/.test(content)) {
+			const value: number = parseInt(content);
+			tokens.push({ line, type: 'raw', value });
+			continue;
 		}
 
-		const argument: string = content.split(',')[1].trim();
-		const parsed: number = parseInt(argument);
-
-		if (isNaN(parsed)) throw new Error('1');
-		if (parsed > 4095 || parsed < 0) throw new Error('2');
-
-		if (content.startsWith('NOTHING')) {
-			return { line, type: 'NOTHING', arguments: [parsed] };
+		// Nothing
+		if (/^nothing,\d+$/.test(content)) {
+			const value: number = parseInt(args[0]);
+			tokens.push({ line, type: 'nothing', value });
+			continue;
 		}
 
-		if (content.startsWith('DISPLAY')) {
-			return { line, type: 'DISPLAY', arguments: [parsed] };
+		// Load
+		if (/^load,\d+$/.test(content)) {
+			const value: number = parseInt(args[0]);
+			tokens.push({ line, type: 'load', value });
+			continue;
 		}
 
-		if (content.startsWith('LOAD')) {
-			return { line, type: 'LOAD', arguments: [parsed] };
+		// Save
+		if (/^save,\d+$/.test(content)) {
+			const value: number = parseInt(args[0]);
+			tokens.push({ line, type: 'save', value });
+			continue;
 		}
 
-		if (content.startsWith('SAVE')) {
-			return { line, type: 'SAVE', arguments: [parsed] };
+		// Add
+		if (/^add,\d+$/.test(content)) {
+			const value: number = parseInt(args[0]);
+			tokens.push({ line, type: 'add', value });
+			continue;
 		}
 
-		if (content.startsWith('ADD')) {
-			return { line, type: 'ADD', arguments: [parsed] };
+		// Substract
+		if (/^substract,\d+$/.test(content)) {
+			const value: number = parseInt(args[0]);
+			tokens.push({ line, type: 'substract', value });
+			continue;
 		}
 
-		if (content.startsWith('SUBSTRACT')) {
-			return { line, type: 'SUBSTRACT', arguments: [parsed] };
+		// Equal
+		if (/^equal,\d+$/.test(content)) {
+			const value: number = parseInt(args[0]);
+			tokens.push({ line, type: 'equal', value });
+			continue;
 		}
 
-		if (content.startsWith('EQUAL')) {
-			return { line, type: 'EQUAL', arguments: [parsed] };
+		// Less
+		if (/^less,\d+$/.test(content)) {
+			const value: number = parseInt(args[0]);
+			tokens.push({ line, type: 'less', value });
+			continue;
 		}
 
-		if (content.startsWith('LESS')) {
-			return { line, type: 'LESS', arguments: [parsed] };
+		// Greater
+		if (/^greater,\d+$/.test(content)) {
+			const value: number = parseInt(args[0]);
+			tokens.push({ line, type: 'greater', value });
+			continue;
 		}
 
-		if (content.startsWith('LESS')) {
-			return { line, type: 'LESS', arguments: [parsed] };
+		// And
+		if (/^and,\d+$/.test(content)) {
+			const value: number = parseInt(args[0]);
+			tokens.push({ line, type: 'and', value });
+			continue;
 		}
 
-		if (content.startsWith('GREATER')) {
-			return { line, type: 'GREATER', arguments: [parsed] };
+		// Or
+		if (/^or,\d+$/.test(content)) {
+			const value: number = parseInt(args[0]);
+			tokens.push({ line, type: 'or', value });
+			continue;
 		}
 
-		if (content.startsWith('AND')) {
-			return { line, type: 'AND', arguments: [parsed] };
+		// Jump
+		if (/^jump,\d+$/.test(content)) {
+			const value: number = parseInt(args[0]);
+			tokens.push({ line, type: 'jump', value });
+			continue;
 		}
 
-		if (content.startsWith('OR')) {
-			return { line, type: 'OR', arguments: [parsed] };
+		// True
+		if (/^true,\d+$/.test(content)) {
+			const value: number = parseInt(args[0]);
+			tokens.push({ line, type: 'true', value });
+			continue;
 		}
 
-		if (content.startsWith('JUMP')) {
-			return { line, type: 'JUMP', arguments: [parsed] };
+		// False
+		if (/^false,\d+$/.test(content)) {
+			const value: number = parseInt(args[0]);
+			tokens.push({ line, type: 'false', value });
+			continue;
 		}
 
-		if (content.startsWith('TRUE')) {
-			return { line, type: 'TRUE', arguments: [parsed] };
+		// Random
+		if (/^random,\d+$/.test(content)) {
+			const value: number = parseInt(args[0]);
+			tokens.push({ line, type: 'random', value });
+			continue;
 		}
 
-		if (content.startsWith('FALSE')) {
-			return { line, type: 'FALSE', arguments: [parsed] };
+		// Input
+		if (/^input,\d+$/.test(content)) {
+			const value: number = parseInt(args[0]);
+			tokens.push({ line, type: 'input', value });
+			continue;
 		}
 
-		if (content.startsWith('RANDOM')) {
-			return { line, type: 'RANDOM', arguments: [] };
+		// Display
+		if (/^display,\d+,\d+,\d+$/.test(content)) {
+			const x: number = parseInt(args[0]);
+			const y: number = parseInt(args[1]);
+			const color: number = parseInt(args[2]);
+
+			tokens.push({ line, type: 'display', x, y, color });
+			continue;
 		}
 
-		if (content.startsWith('INPUT')) {
-			return { line, type: 'INPUT', arguments: [parsed] };
-		}
-
-		console.log(content);
-		throw new Error();
-	});
+		// If command is not valid
+		throw new CompilationError(`Сommand "${content}" is not valid`, line);
+	}
 
 	return tokens;
 }
 
-
 /**
- *
- * @param code Code to parse
+ * Parse code and prepare it for tokenization.
+ * @param code Code to parse.
  */
 function Parse(code: string): Line[] {
+	// Lower case
+	code = code.toLowerCase();
+
 	// Split code by lines
 	let splits: string[] = code.split(/\r?\n/);
 
@@ -273,64 +502,42 @@ function Parse(code: string): Line[] {
 	// Remove empty lines
 	lines = lines.filter(({ content }) => content !== '');
 
-	// Uppercase content
-	lines = lines.map(({ content, index }) => {
-		// If line contain string argument
-		if (content.includes('"')) {
-			const splited: string[] = content.split('"');
-			splited[0] = splited[0].toUpperCase();
-			const formated: string = splited.join('"');
-			return { index, content: formated };
-		}
+	// Detect begin and end of the code part
+	const begin: number = lines.findIndex(({ content }) => content === 'begin');
+	const end: number = lines.findIndex(({ content }) => content === 'end');
 
-		const formated: string = content.toUpperCase();
-		return { index, content: formated };
-	});
-
-	// Detect start and end of the code part
-	const start: number = lines.findIndex(({ content }) => content === 'START');
-	const end: number = lines.findIndex(({ content }) => content === 'END');
-
-	// If start or end not found
-	if (start === -1) throw new Error();
-	if (end === -1) throw new Error();
+	// If begin or end not found
+	if (begin === -1) throw new CompilationError('Code beginning is not specified');
+	if (end === -1) throw new CompilationError('Code ending is not specified');
 
 	// Slice unused file parts
-	lines = lines.slice(start + 1, end);
+	lines = lines.slice(begin + 1, end);
 
 	return lines;
 }
 
 /**
- * Check if string is numeric
- * @param value String that contains number
+ * Custom compiler error
  */
-function isNumeric(value: string): boolean {
-	return /^\d+$/.test(value);
-}
-
-
-/** Custom compiler error */
-export class CompilerError extends Error {
-	public name: string = 'CompilerError';
+export class CompilationError extends Error {
+	public name: string = 'CompilationError';
 	public message: string;
 	public cause: any;
 	public stack: string | undefined;
-
-	public line: number = 0;
-	public global: boolean = false
+	public line: number = -1;
 
 	/**
 	 * Error initialization.
 	 * @param message Error message.
+	 * @param line Line number of the error.
 	 * @param cause Cause of the error.
 	 */
-	constructor(message: string, cause?: any) {
+	constructor(message: string, line?: number, cause?: any) {
 		super(message);
-		Error.captureStackTrace(this, CompilerError);
+		Error.captureStackTrace(this, CompilationError);
 
 		this.message = message;
+		if (line) this.line = line;
 		if (cause) this.cause = cause;
-		if (typeof cause === 'string' || typeof cause === 'number') this.message = `${message}: ${cause}`;
 	}
 }
