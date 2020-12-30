@@ -37,6 +37,9 @@ function parseExecutable(file) {
     });
 }
 
+/**
+ * Draw display
+ */
 function processDisplay() {
     for (let y = 0; y < canvas.height; y++) {
         for (let x = 0; x < canvas.width; x++) {
@@ -51,6 +54,7 @@ function processDisplay() {
     if (VMInstance.running) requestAnimationFrame(processDisplay);
 }
 
+// Process key down events
 window.addEventListener('keydown', (event) => {
     switch (event.code) {
         case 'ArrowUp':
@@ -74,6 +78,7 @@ window.addEventListener('keydown', (event) => {
     }
 });
 
+// Process key up events
 window.addEventListener('keyup', (event) => {
     switch (event.code) {
         case 'ArrowUp':
@@ -97,6 +102,7 @@ window.addEventListener('keyup', (event) => {
     }
 });
 
+// Load executable file
 document.getElementById('load').addEventListener('click', async (event) => {
     const executable = await loadExecutable();
     const parsed = await parseExecutable(executable);
@@ -106,6 +112,7 @@ document.getElementById('load').addEventListener('click', async (event) => {
     processDisplay();
 });
 
+// Reset console
 document.getElementById('reset').addEventListener('click', () => {
     VMInstance.stop();
     VMInstance.reset();

@@ -6,52 +6,94 @@ interface Line {
 	content: string;
 }
 
-// Finish token structure
-interface FinishToken {
+// Token structure
+interface Token {
 	line: number;
+	type: string;
+}
+
+// Finish token structure
+interface FinishToken extends Token {
 	type: 'finish';
 }
 
-// Point token structure
-interface PointToken {
-	line: number;
-	type: 'point';
-	name: string;
-}
-
-// Goto token structure
-interface GotoToken {
-	line: number;
-	type: 'goto';
-	point: string;
+// Raw instructions token
+interface RawToken extends Token {
+	type: 'raw';
+	value: number;
 }
 
 // Declare token structure
-interface DeclareToken {
-	line: number;
+interface DeclareToken extends Token {
 	type: 'declare';
 	value: number;
 	address: number;
 }
 
-// Display token structure
-interface DisplayToken {
-	line: number;
+// Point token structure
+interface PointToken extends Token {
+	type: 'point';
+	name: string;
+}
+
+// Empty instructions token
+interface NothingToken extends Token {
+	type: 'nothing';
+	value: number;
+}
+
+// Basic instructions token
+interface BasicToken extends Token {
+	type: 'load' | 'save' | 'add' | 'substract';
+	address: number;
+}
+
+// Comparison instructions token
+interface ComparisonToken extends Token {
+	type: 'equal' | 'less' | 'greater' | 'and' | 'or';
+	address: number;
+}
+
+// Logical instructions token
+interface LogicalToken extends Token {
+	type: 'jump' | 'true' | 'false';
+	position: string | number;
+}
+
+// Random instructions token
+interface RandomToken extends Token {
+	type: 'random';
+	maximum: number;
+}
+
+// Input instructions token
+interface InputToken extends Token {
+	type: 'input';
+	key: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+}
+
+// Display instructions token
+interface DisplayToken extends Token {
 	type: 'display';
 	x: number;
 	y: number;
 	color: number;
 }
 
-// All other instructions token
-interface InstructionToken {
-	line: number;
-	type: 'raw' | 'nothing' | 'load' | 'save' | 'add' | 'substract' | 'equal' | 'less' | 'greater' | 'and' | 'or' | 'jump' | 'true' | 'false' | 'random' | 'input';
-	value: number;
-}
-
 // List of tokens
-type Tokens = Array<PointToken | DisplayToken | GotoToken | DeclareToken | FinishToken | InstructionToken>;
+type Tokens = Array<
+	| FinishToken
+	| PointToken
+	| DeclareToken
+	| RawToken
+	| NothingToken
+	| BasicToken
+	| ComparisonToken
+	| LogicalToken
+	| RandomToken
+	| InputToken
+	| DisplayToken
+>;
 
 // Compilator configuration
 interface Config {
@@ -94,7 +136,6 @@ export function Compile(code: string, config: Partial<Config> = {}): Uint16Array
 		if (value > 4095 || value < 0) throw new CompilationError(`Value "${value}" is out of range`, line);
 
 		declarations.push(token);
-
 		return false;
 	});
 
@@ -104,41 +145,27 @@ export function Compile(code: string, config: Partial<Config> = {}): Uint16Array
 		const { name, line } = token;
 
 		// Check if point is already declared
-		if (safe && points.has(name)) throw new CompilationError(`Point "${name}" declared multiple times`, line);
+		if (safe && points.has(name)) throw new CompilationError(`Point "${name}" declared multiple times`, line, true);
 
 		points.set(name, {
 			line: line,
-			address: index,
+			address: index - points.size,
 		});
-
 		return false;
 	});
 
 	// Check instructions
-	if (safe) {
-		if (tokenized.length >= 4096) {
-			throw new CompilationError(`Code contains ${tokenized.length} instructions ( Maximum supported is 4096 )`);
-		}
+	if (safe && tokenized.length > 4095) {
+		throw new CompilationError(`Code contains ${tokenized.length} instructions ( Maximum supported is 4096 )`, undefined, true);
 	}
-
-	console.log(tokens)
 
 	// Convery tokens to instructions
 	for (let i = 0; i < tokens.length; i++) {
-		const token = tokens[i] as GotoToken | DisplayToken | FinishToken | InstructionToken;
+		const token = tokens[i];
 
 		// Finish instruction
 		if (token.type === 'finish') {
 			binary[i] = 0;
-			continue;
-		}
-
-		// Goto instruction
-		if (token.type === 'goto') {
-			const point = points.get(token.point);
-			if (typeof point === 'undefined') throw new CompilationError(`Point "${token.point}" is not found`, token.line);
-
-			binary[i] = 4096 * opcodes.JUMP + point.address;
 			continue;
 		}
 
@@ -158,105 +185,137 @@ export function Compile(code: string, config: Partial<Config> = {}): Uint16Array
 
 		// Empty instruction
 		if (token.type === 'load') {
-			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
-			binary[i] = 4096 * opcodes.LOAD + token.value;
+			if (token.address > 4095 || token.address < 0) throw new CompilationError(`Address "${token.address}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.LOAD + token.address;
 			continue;
 		}
 
 		// Save instruction
 		if (token.type === 'save') {
-			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
-			binary[i] = 4096 * opcodes.SAVE + token.value;
+			if (token.address > 4095 || token.address < 0) throw new CompilationError(`Address "${token.address}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.SAVE + token.address;
 			continue;
 		}
 
 		// Add instruction
 		if (token.type === 'add') {
-			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
-			binary[i] = 4096 * opcodes.ADD + token.value;
+			if (token.address > 4095 || token.address < 0) throw new CompilationError(`Address "${token.address}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.ADD + token.address;
 			continue;
 		}
 
 		// Save instruction
 		if (token.type === 'substract') {
-			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
-			binary[i] = 4096 * opcodes.SUBSTRACT + token.value;
+			if (token.address > 4095 || token.address < 0) throw new CompilationError(`Address "${token.address}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.SUBSTRACT + token.address;
 			continue;
 		}
 
 		// Equal instruction
 		if (token.type === 'equal') {
-			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
-			binary[i] = 4096 * opcodes.EQUAL + token.value;
+			if (token.address > 4095 || token.address < 0) throw new CompilationError(`Address "${token.address}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.EQUAL + token.address;
 			continue;
 		}
 
 		// Less instruction
 		if (token.type === 'less') {
-			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
-			binary[i] = 4096 * opcodes.LESS + token.value;
+			if (token.address > 4095 || token.address < 0) throw new CompilationError(`Address "${token.address}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.LESS + token.address;
 			continue;
 		}
 
 		// Greater instruction
 		if (token.type === 'greater') {
-			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
-			binary[i] = 4096 * opcodes.GREATER + token.value;
+			if (token.address > 4095 || token.address < 0) throw new CompilationError(`Address "${token.address}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.GREATER + token.address;
 			continue;
 		}
 
 		// And instruction
 		if (token.type === 'and') {
-			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
-			binary[i] = 4096 * opcodes.AND + token.value;
+			if (token.address > 4095 || token.address < 0) throw new CompilationError(`Address "${token.address}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.AND + token.address;
 			continue;
 		}
 
 		// Or instruction
 		if (token.type === 'or') {
-			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
-			binary[i] = 4096 * opcodes.OR + token.value;
+			if (token.address > 4095 || token.address < 0) throw new CompilationError(`Address "${token.address}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.OR + token.address;
 			continue;
 		}
 
 		// Jump instruction
 		if (token.type === 'jump') {
-			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
-			binary[i] = 4096 * opcodes.JUMP + token.value;
+			let address: number;
+
+			if (typeof token.position === 'string') {
+				const point = points.get(token.position);
+				if (typeof point === 'undefined') throw new CompilationError(`Point "${token.position}" is not found`, token.line);
+				address = point.address;
+			} else {
+				if (token.position > 4095 || token.position < 0)
+					throw new CompilationError(`Address "${token.position}" is out of range`, token.line);
+				address = token.position;
+			}
+
+			binary[i] = 4096 * opcodes.JUMP + address;
 			continue;
 		}
 
 		// True instruction
 		if (token.type === 'true') {
-			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
-			binary[i] = 4096 * opcodes.TRUE + token.value;
+			let address: number;
+
+			if (typeof token.position === 'string') {
+				const point = points.get(token.position);
+				if (typeof point === 'undefined') throw new CompilationError(`Point "${token.position}" is not found`, token.line);
+				address = point.address;
+			} else {
+				if (token.position > 4095 || token.position < 0)
+					throw new CompilationError(`Address "${token.position}" is out of range`, token.line);
+				address = token.position;
+			}
+
+			binary[i] = 4096 * opcodes.TRUE + address;
 			continue;
 		}
 
 		// False instruction
 		if (token.type === 'false') {
-			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
-			binary[i] = 4096 * opcodes.FALSE + token.value;
+			let address: number;
+
+			if (typeof token.position === 'string') {
+				const point = points.get(token.position);
+				if (typeof point === 'undefined') throw new CompilationError(`Point "${token.position}" is not found`, token.line);
+				address = point.address;
+			} else {
+				if (token.position > 4095 || token.position < 0)
+					throw new CompilationError(`Address "${token.position}" is out of range`, token.line);
+				address = token.position;
+			}
+
+			binary[i] = 4096 * opcodes.FALSE + address;
 			continue;
 		}
 
 		// Random instruction
 		if (token.type === 'random') {
-			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
-			binary[i] = 4096 * opcodes.RANDOM + token.value;
+			if (token.maximum > 4095 || token.maximum < 0) throw new CompilationError(`Value "${token.maximum}" is out of range`, token.line);
+			binary[i] = 4096 * opcodes.RANDOM + token.maximum;
 			continue;
 		}
 
 		// Input instruction
 		if (token.type === 'input') {
-			if (token.value > 4095 || token.value < 0) throw new CompilationError(`Address "${token.value}" is out of range`, token.line);
-			binary[i] = 4096 * opcodes.INPUT + token.value;
+			if (token.key > 7 || token.key < 0) throw new CompilationError(`Key "${token.key}" is not exists`, token.line);
+			binary[i] = 4096 * opcodes.INPUT + token.key;
 			continue;
 		}
 
 		// Display instruction
 		if (token.type === 'display') {
-			console.log(111);
 			const { x, y, color, line } = token;
 			if (x > 31 || x < 0) throw new CompilationError(`Value "${x}" is out of range`, line);
 			if (y > 31 || y < 0) throw new CompilationError(`Value "${y}" is out of range`, line);
@@ -272,10 +331,13 @@ export function Compile(code: string, config: Partial<Config> = {}): Uint16Array
 		const { address, value, line }: DeclareToken = declarations[i];
 
 		// If address already contains the instruction
-		if (safe && binary[address] !== 0) throw new CompilationError(`Address "${address}" already contains the instructions`, line);
+		if (safe && binary[address] !== 0) throw new CompilationError(`Address "${address}" already contains the instructions`, line, true);
 
 		binary[address] = value;
 	}
+
+	// If its empty
+	if (tokens.length === 0) return new Uint16Array(0);
 
 	// Minify executable code
 	if (minify) {
@@ -284,8 +346,8 @@ export function Compile(code: string, config: Partial<Config> = {}): Uint16Array
 
 		// Impossible to minify
 		if (binary[size] !== 0) return binary;
-		
-		// Detect ending 
+
+		// Detect code ending
 		for (let i = size; i >= 0; i--) {
 			if (binary[i] === 0) continue;
 			end = i + 1;
@@ -295,7 +357,7 @@ export function Compile(code: string, config: Partial<Config> = {}): Uint16Array
 		// Remove unused space
 		const minified: Uint16Array = binary.filter((instruction, index) => {
 			if (index <= end) return true;
-			return false
+			return false;
 		});
 
 		return minified;
@@ -326,16 +388,9 @@ function Tokenize(lines: Line[]): Tokens {
 		}
 
 		// Point
-		if (/^\w+:$/.test(content)) {
+		if (/^[a-z]+:$/.test(content)) {
 			const name: string = content.slice(0, -1);
 			tokens.push({ line, type: 'point', name });
-			continue;
-		}
-
-		// Goto
-		if (/^goto,\w+$/.test(content)) {
-			const point: string = args[0];
-			tokens.push({ line, type: 'goto', point });
 			continue;
 		}
 
@@ -363,99 +418,102 @@ function Tokenize(lines: Line[]): Tokens {
 
 		// Load
 		if (/^load,\d+$/.test(content)) {
-			const value: number = parseInt(args[0]);
-			tokens.push({ line, type: 'load', value });
+			const address: number = parseInt(args[0]);
+			tokens.push({ line, type: 'load', address });
 			continue;
 		}
 
 		// Save
 		if (/^save,\d+$/.test(content)) {
-			const value: number = parseInt(args[0]);
-			tokens.push({ line, type: 'save', value });
+			const address: number = parseInt(args[0]);
+			tokens.push({ line, type: 'save', address });
 			continue;
 		}
 
 		// Add
 		if (/^add,\d+$/.test(content)) {
-			const value: number = parseInt(args[0]);
-			tokens.push({ line, type: 'add', value });
+			const address: number = parseInt(args[0]);
+			tokens.push({ line, type: 'add', address });
 			continue;
 		}
 
 		// Substract
 		if (/^substract,\d+$/.test(content)) {
-			const value: number = parseInt(args[0]);
-			tokens.push({ line, type: 'substract', value });
+			const address: number = parseInt(args[0]);
+			tokens.push({ line, type: 'substract', address });
 			continue;
 		}
 
 		// Equal
 		if (/^equal,\d+$/.test(content)) {
-			const value: number = parseInt(args[0]);
-			tokens.push({ line, type: 'equal', value });
+			const address: number = parseInt(args[0]);
+			tokens.push({ line, type: 'equal', address });
 			continue;
 		}
 
 		// Less
 		if (/^less,\d+$/.test(content)) {
-			const value: number = parseInt(args[0]);
-			tokens.push({ line, type: 'less', value });
+			const address: number = parseInt(args[0]);
+			tokens.push({ line, type: 'less', address });
 			continue;
 		}
 
 		// Greater
 		if (/^greater,\d+$/.test(content)) {
-			const value: number = parseInt(args[0]);
-			tokens.push({ line, type: 'greater', value });
+			const address: number = parseInt(args[0]);
+			tokens.push({ line, type: 'greater', address });
 			continue;
 		}
 
 		// And
 		if (/^and,\d+$/.test(content)) {
-			const value: number = parseInt(args[0]);
-			tokens.push({ line, type: 'and', value });
+			const address: number = parseInt(args[0]);
+			tokens.push({ line, type: 'and', address });
 			continue;
 		}
 
 		// Or
 		if (/^or,\d+$/.test(content)) {
-			const value: number = parseInt(args[0]);
-			tokens.push({ line, type: 'or', value });
+			const address: number = parseInt(args[0]);
+			tokens.push({ line, type: 'or', address });
 			continue;
 		}
 
 		// Jump
-		if (/^jump,\d+$/.test(content)) {
-			const value: number = parseInt(args[0]);
-			tokens.push({ line, type: 'jump', value });
+		if (/^jump,\w+$/.test(content)) {
+			const isNumber: boolean = /^\d+$/.test(args[0]);
+			const position: number | string = isNumber ? parseInt(args[0]) : args[0];
+			tokens.push({ line, type: 'jump', position });
 			continue;
 		}
 
 		// True
-		if (/^true,\d+$/.test(content)) {
-			const value: number = parseInt(args[0]);
-			tokens.push({ line, type: 'true', value });
+		if (/^true,\w+$/.test(content)) {
+			const isNumber: boolean = /^\d+$/.test(args[0]);
+			const position: number | string = isNumber ? parseInt(args[0]) : args[0];
+			tokens.push({ line, type: 'true', position });
 			continue;
 		}
 
 		// False
-		if (/^false,\d+$/.test(content)) {
-			const value: number = parseInt(args[0]);
-			tokens.push({ line, type: 'false', value });
+		if (/^false,\w+$/.test(content)) {
+			const isNumber: boolean = /^\d+$/.test(args[0]);
+			const position: number | string = isNumber ? parseInt(args[0]) : args[0];
+			tokens.push({ line, type: 'false', position });
 			continue;
 		}
 
 		// Random
 		if (/^random,\d+$/.test(content)) {
-			const value: number = parseInt(args[0]);
-			tokens.push({ line, type: 'random', value });
+			const maximum: number = parseInt(args[0]);
+			tokens.push({ line, type: 'random', maximum });
 			continue;
 		}
 
 		// Input
 		if (/^input,\d+$/.test(content)) {
-			const value: number = parseInt(args[0]);
-			tokens.push({ line, type: 'input', value });
+			const key = parseInt(args[0]) as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+			tokens.push({ line, type: 'input', key });
 			continue;
 		}
 
@@ -522,22 +580,22 @@ function Parse(code: string): Line[] {
 export class CompilationError extends Error {
 	public name: string = 'CompilationError';
 	public message: string;
-	public cause: any;
 	public stack: string | undefined;
 	public line: number = -1;
+	public safe: boolean = false;
 
 	/**
 	 * Error initialization.
 	 * @param message Error message.
 	 * @param line Line number of the error.
-	 * @param cause Cause of the error.
+	 * @param safe True if error made because of the safe mode.
 	 */
-	constructor(message: string, line?: number, cause?: any) {
+	constructor(message: string, line?: number, safe?: boolean) {
 		super(message);
 		Error.captureStackTrace(this, CompilationError);
 
 		this.message = message;
 		if (line) this.line = line;
-		if (cause) this.cause = cause;
+		if (safe) this.safe = true;
 	}
 }

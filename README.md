@@ -17,15 +17,18 @@
 2. SAVE, address
 3. ADD, address
 4. SUBSTRACT, address
+
 5. EQUAL, address
 6. LESS, address
 7. GREATER, address
 8. AND, address
 9. OR, address
+
 10. JUMP, addressToJump
 11. TRUE, addressToJump
 12. FALSE, addressToJump
-13. RANDOM, TODO 
+
+13. RANDOM, maximum 
 14. INPUT, key
 15. DISPLAY, x, y, color
 
@@ -34,12 +37,12 @@
 * end
 
 * finish
-* point
-* goto
-* declare
 * raw
+* declare
+* point
 
 * nothing
+
 * load
 * save
 * add
@@ -50,9 +53,11 @@
 * greater
 * and
 * or
+
 * jump
 * true
 * false
+
 * random
 * input
 * display

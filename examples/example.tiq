@@ -1,15 +1,25 @@
-Simple example of the tiQ Assembler
+Input testing code
 
 begin
 
-    xxx:
+        display, 16, 16, 1
+        display, 16, 16, 1
+        display, 16, 16, 1
 
-        display, 15, 15, 1
-        display, 14, 15, 1
-        display, 14, 14, 1
-        display, 13, 14, 1
+        start:
 
-    goto, xxx
+        input, 0
+        true, draw
+
+        display, 16, 16, 0
+
+        jump, start
+
+        // Draw pixel
+        draw:
+        display, 16, 16, 1
+        jump, start
+
 
 end
 

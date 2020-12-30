@@ -41,10 +41,6 @@ export class VM {
 
 	private loop?: number;
 
-	public onDisplay?: () => void;
-	public beforeStep?: () => void;
-	public afterStep?: () => void;
-
 	constructor(config: Partial<VMConfig> = {}) {
 		if (typeof config !== 'object') throw new VMError('Config must be an object');
 		if (typeof config.safe === 'boolean') this.safe = config.safe;
@@ -102,16 +98,12 @@ export class VM {
 	 * Fetch, Decode and Execute one instruction from the memory
 	 */
 	public step(): void {
-		if (typeof this.beforeStep === 'function') this.beforeStep();
-
 		const instruction: number = this.fetch(this.counter);
 		const { opcode, argument } = this.decode(instruction);
 		this.execute(opcode, argument);
 		
 		this.counter += 1;
 		if (this.counter > 4095) this.counter = 0;
-
-		if (typeof this.afterStep === 'function') this.afterStep();
 	}
 
 	/**
@@ -225,28 +217,25 @@ export class VM {
 			}
 
 			case opcodes.JUMP: {
-				const value: number = argument - 1;
-				this.counter = value;
-				if (this.debug) this.log(`JUMP, ${argument} (${this.accumulator}})`);
+				this.counter = argument - 1;
+				if (this.debug) this.log(`JUMP, ${argument} (${this.accumulator})`);
 				break;
 			}
 
 			case opcodes.TRUE: {
-				const value: number = argument - 1;
-				if (this.accumulator !== 0) this.counter = value;
+				if (this.accumulator !== 0) this.counter = argument - 1;
 				if (this.debug) this.log(`TRUE, ${argument} (${this.accumulator})`);
 				break;
 			}
 
 			case opcodes.FALSE: {
-				const value: number = argument - 1;
-				if (this.accumulator === 0) this.counter = value;
+				if (this.accumulator === 0) this.counter = argument - 1;
 				if (this.debug) this.log(`FALSE, ${argument} (${this.accumulator})`);
 				break;
 			}
 
 			case opcodes.RANDOM: {
-				this.accumulator = Math.floor(Math.random() * 2);
+				this.accumulator = Math.floor(Math.random() * (argument + 1));
 				if (this.debug) this.log(`RANDOM, ${argument} (${this.accumulator})`);
 				break;
 			}
@@ -268,12 +257,12 @@ export class VM {
 				const address: number = 32 * y + x;
 				this.display[address] = color;
 				if (this.debug) this.log(`DISPLAY, ${x}, ${y}, ${color}`);
-				if (typeof this.onDisplay === 'function') this.onDisplay();
 				break;
 			}
 		}
 
-		if (!this.running) this.stop();
+		// Stop interval if not running
+		if (!this.running) clearInterval(this.loop);
 	}
 
 	/**
