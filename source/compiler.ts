@@ -98,13 +98,13 @@ type Tokens = Array<
 // Compilator configuration
 interface Config {
 	safe: boolean;
-	minify: boolean;
+	optimize: boolean;
 }
 
 // Default config
 const defaultConfig: Config = {
 	safe: true,
-	minify: true,
+	optimize: true,
 };
 
 /**
@@ -117,7 +117,7 @@ export function Compile(code: string, config: Partial<Config> = {}): Uint16Array
 
 	// Merge configs
 	config = { ...defaultConfig, ...config };
-	const { safe, minify } = config;
+	const { safe, optimize } = config;
 
 	const parsed: Line[] = Parse(code);
 	const tokenized: Tokens = Tokenize(parsed);
@@ -330,8 +330,10 @@ export function Compile(code: string, config: Partial<Config> = {}): Uint16Array
 	for (let i = 0; i < declarations.length; i++) {
 		const { address, value, line }: DeclareToken = declarations[i];
 
-		// If address already contains the instruction
-		if (safe && binary[address] !== 0) throw new CompilationError(`Address "${address}" already contains the instructions`, line, true);
+		// If address contains instruction
+		if (safe && binary[address] !== 0) {
+			throw new CompilationError(`Address "${address}" already contains the instruction`, line, true);
+		}
 
 		binary[address] = value;
 	}
@@ -339,12 +341,12 @@ export function Compile(code: string, config: Partial<Config> = {}): Uint16Array
 	// If its empty
 	if (tokens.length === 0) return new Uint16Array(0);
 
-	// Minify executable code
-	if (minify) {
+	// Oprimize executable code size
+	if (optimize) {
 		const size: number = binary.length - 1;
 		let end: number = size;
 
-		// Impossible to minify
+		// Impossible to optimize
 		if (binary[size] !== 0) return binary;
 
 		// Detect code ending
@@ -355,12 +357,12 @@ export function Compile(code: string, config: Partial<Config> = {}): Uint16Array
 		}
 
 		// Remove unused space
-		const minified: Uint16Array = binary.filter((instruction, index) => {
+		const optimized: Uint16Array = binary.filter((instruction, index) => {
 			if (index <= end) return true;
 			return false;
 		});
 
-		return minified;
+		return optimized;
 	}
 
 	return binary;
@@ -388,7 +390,7 @@ function Tokenize(lines: Line[]): Tokens {
 		}
 
 		// Point
-		if (/^[a-z]+:$/.test(content)) {
+		if (/^(\D)\w+:$/.test(content)) {
 			const name: string = content.slice(0, -1);
 			tokens.push({ line, type: 'point', name });
 			continue;

@@ -16,16 +16,16 @@ const output: string = args[2];
 // Default config
 let log: boolean = true;
 let safe: boolean = true;
-let minify: boolean = true;
 let colors: boolean = true;
+let optimize: boolean = true;
 
 // Search for flags
 for (let i = 0; i < args.length; i++) {
 	const argument: string = args[i];
 	if (argument === '--no-log') log = false;
 	if (argument === '--no-safe') safe = false;
-	if (argument === '--no-minify') minify = false;
 	if (argument === '--no-colors') colors = false;
+	if (argument === '--no-optimizations') optimize = false;
 }
 
 // If no input
@@ -39,7 +39,7 @@ if (type === 'compile') {
 	try {
 		const start = Date.now();
 		const code: string = readFileSync(input, { encoding: 'utf-8' });
-		const compiled: Uint16Array = Compile(code, { safe, minify });
+		const compiled: Uint16Array = Compile(code, { safe, optimize });
 		const time: number = Date.now() - start;
 
 		if (typeof output === 'string') {
@@ -48,12 +48,13 @@ if (type === 'compile') {
 			console.log(compiled.join(','));
 		}
 
-		if (colors) {
-			console.info(green, `Compilation successfully finished in ${time}ms`);
-		} else {
-			console.info(`Compilation successfully finished in ${time}ms`);
+		if (log) {
+			if (colors) {
+				console.info(green, `Compilation successfully finished in ${time}ms`);
+			} else {
+				console.info(`Compilation successfully finished in ${time}ms`);
+			}
 		}
-
 	} catch (error) {
 		if (error instanceof CompilationError) {
 			const info: string = error.line === -1 ? 'global' : `line:${error.line}`;
@@ -64,7 +65,6 @@ if (type === 'compile') {
 			} else {
 				console.error(`[${info}] ${error.message}`);
 			}
-
 		} else {
 			if (colors) {
 				console.error(red, error);
@@ -77,11 +77,28 @@ if (type === 'compile') {
 
 // Decompelation
 if (type === 'decompile') {
-	const content: Buffer = readFileSync(input);
-	const executable: Buffer = Buffer.from(content);
-	const instructions: Uint16Array = new Uint16Array(executable.buffer, executable.byteOffset, executable.length / 2);
+	try {
+		const start = Date.now();
+		const content: Buffer = readFileSync(input);
+		const executable: Buffer = Buffer.from(content);
+		const instructions: Uint16Array = new Uint16Array(executable.buffer, executable.byteOffset, executable.length / 2);
+		const code: string = Decompile(instructions);
+		const time: number = Date.now() - start;
 	
-
-	const code = Decompile(instructions);
-	console.log(code);
+		if (typeof output === 'string') {
+			writeFileSync(output, code);
+		} else {
+			console.log(code);
+		}
+	
+		if (log) {
+			if (colors) {
+				console.info(green, `Decompilation successfully finished in ${time}ms`);
+			} else {
+				console.info(`Decompilation successfully finished in ${time}ms`);
+			}
+		}
+	} catch (error) {
+		console.error(error); // TODO
+	}
 }

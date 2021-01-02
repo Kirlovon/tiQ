@@ -2,24 +2,186 @@ Input testing code
 
 begin
 
-        display, 16, 16, 1
-        display, 16, 16, 1
-        display, 16, 16, 1
-
+        // Loop start
         start:
 
+        check_up:
         input, 0
-        true, draw
+        true, draw_up
+        false, clean_up
 
-        display, 16, 16, 0
+        check_down:
+        input, 1
+        true, draw_down
+        false, clean_down
+
+        check_left:
+        input, 2
+        true, draw_left
+        false, clean_left
+
+        check_right:
+        input, 3
+        true, draw_right
+        false, clean_right
+
 
         jump, start
 
-        // Draw pixel
-        draw:
-        display, 16, 16, 1
-        jump, start
+        //////////////////////////////////////
 
+        draw_up:
+        display, 14, 12, 1
+        display, 15, 12, 1
+        display, 16, 12, 1
+        display, 17, 12, 1
+        display, 14, 13, 1
+        display, 15, 13, 1
+        display, 16, 13, 1
+        display, 17, 13, 1
+        display, 14, 14, 1
+        display, 15, 14, 1
+        display, 16, 14, 1
+        display, 17, 14, 1
+        display, 14, 15, 1
+        display, 15, 15, 1
+        display, 16, 15, 1
+        display, 17, 15, 1
+        jump, check_down
 
+        draw_down:
+        display, 14, 17, 1
+        display, 15, 17, 1
+        display, 16, 17, 1
+        display, 17, 17, 1
+        display, 14, 18, 1
+        display, 15, 18, 1
+        display, 16, 18, 1
+        display, 17, 18, 1
+        display, 14, 19, 1
+        display, 15, 19, 1
+        display, 16, 19, 1
+        display, 17, 19, 1
+        display, 14, 20, 1
+        display, 15, 20, 1
+        display, 16, 20, 1
+        display, 17, 20, 1
+        jump, check_left
+
+        draw_left:
+        display, 9, 17, 1
+        display, 10, 17, 1
+        display, 11, 17, 1
+        display, 12, 17, 1
+        display, 9, 18, 1
+        display, 10, 18, 1
+        display, 11, 18, 1
+        display, 12, 18, 1
+        display, 9, 19, 1
+        display, 10, 19, 1
+        display, 11, 19, 1
+        display, 12, 19, 1
+        display, 9, 20, 1
+        display, 10, 20, 1
+        display, 11, 20, 1
+        display, 12, 20, 1
+        jump, check_right
+
+        draw_right:
+        display, 19, 17, 1
+        display, 20, 17, 1
+        display, 21, 17, 1
+        display, 22, 17, 1
+        display, 19, 18, 1
+        display, 20, 18, 1
+        display, 21, 18, 1
+        display, 22, 18, 1
+        display, 19, 19, 1
+        display, 20, 19, 1
+        display, 21, 19, 1
+        display, 22, 19, 1
+        display, 19, 20, 1
+        display, 20, 20, 1
+        display, 21, 20, 1
+        display, 22, 20, 1
+        jump, check_up
+
+        //////////////////////////////////////
+
+        clean_up:
+        display, 14, 12, 0
+        display, 15, 12, 0
+        display, 16, 12, 0
+        display, 17, 12, 0
+        display, 14, 13, 0
+        display, 15, 13, 0
+        display, 16, 13, 0
+        display, 17, 13, 0
+        display, 14, 14, 0
+        display, 15, 14, 0
+        display, 16, 14, 0
+        display, 17, 14, 0
+        display, 14, 15, 0
+        display, 15, 15, 0
+        display, 16, 15, 0
+        display, 17, 15, 0
+        jump, check_down
+
+        clean_down:
+        display, 14, 17, 0
+        display, 15, 17, 0
+        display, 16, 17, 0
+        display, 17, 17, 0
+        display, 14, 18, 0
+        display, 15, 18, 0
+        display, 16, 18, 0
+        display, 17, 18, 0
+        display, 14, 19, 0
+        display, 15, 19, 0
+        display, 16, 19, 0
+        display, 17, 19, 0
+        display, 14, 20, 0
+        display, 15, 20, 0
+        display, 16, 20, 0
+        display, 17, 20, 0
+        jump, check_left
+
+        clean_left:
+        display, 9, 17, 0
+        display, 10, 17, 0
+        display, 11, 17, 0
+        display, 12, 17, 0
+        display, 9, 18, 0
+        display, 10, 18, 0
+        display, 11, 18, 0
+        display, 12, 18, 0
+        display, 9, 19, 0
+        display, 10, 19, 0
+        display, 11, 19, 0
+        display, 12, 19, 0
+        display, 9, 20, 0
+        display, 10, 20, 0
+        display, 11, 20, 0
+        display, 12, 20, 0
+        jump, check_right
+
+        clean_right:
+        display, 19, 17, 0
+        display, 20, 17, 0
+        display, 21, 17, 0
+        display, 22, 17, 0
+        display, 19, 18, 0
+        display, 20, 18, 0
+        display, 21, 18, 0
+        display, 22, 18, 0
+        display, 19, 19, 0
+        display, 20, 19, 0
+        display, 21, 19, 0
+        display, 22, 19, 0
+        display, 19, 20, 0
+        display, 20, 20, 0
+        display, 21, 20, 0
+        display, 22, 20, 0
+        jump, check_up
 end
 

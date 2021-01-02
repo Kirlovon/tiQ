@@ -59,16 +59,21 @@ export class VM {
 
 	/**
 	 * Load executable data to the memory.
-	 * @param data Data to load.
+	 * @param instructions Data to load.
 	 */
-	public load(data: Uint16Array): void {
+	public load(instructions: Uint16Array): void {
+		this.memory = new Uint16Array(4096);
+
 		if (this.safe) {
-			if (data.length > 4096) throw new VMError('Executable is too big and most likely broken');
-			if (data.length === 0) throw new VMError('Executable is empty and most likely broken');
-			if (data[0] < 4096) throw new VMError('Executable starts with an empty instruction and will not be executed');
+			if (instructions.length > 4096) throw new VMError('Executable is too big and most likely broken');
+			if (instructions.length === 0) throw new VMError('Executable is empty and most likely broken');
+			if (instructions[0] < 4096) throw new VMError('Executable starts with an empty instruction and will not be executed');
 		}
 
-		this.memory = data;
+		for (let address = 0; address < instructions.length; address++) {
+			const instruction: number = instructions[address];
+			this.memory[address] = instruction;
+		}
 	}
 
 	/**

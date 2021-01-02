@@ -4,10 +4,24 @@ interface Config {
     labels: boolean;
 }
 
-// TODO
-export function Decompile(executable: Uint16Array, config?: Config): string {
-    const lines: string[] = [];
+// Default configuration
+const defaultConfig: Config = {
+    tabs: true,
+    labels: true
+}
 
+/**
+ * Decompile binary file
+ * @param executable Executable instructions
+ * @param config Configuration
+ */
+export function Decompile(executable: Uint16Array, config?: Config): string {
+    // Merge configs
+    config = { ...defaultConfig, ...config };
+
+    let lines: string[] = [];
+    const { tabs, labels } = config;
+    
     for (let i = 0; i < executable.length; i++) {
         const instruction: number = executable[i];
         const opcode: number = Math.floor(instruction / 4096);
@@ -128,14 +142,19 @@ export function Decompile(executable: Uint16Array, config?: Config): string {
         
     // }
 
-    const tabs: string[] = lines.map(line => ('\t' + line));
-    const code: string = tabs.join('\n');
+    // Tabulation
+    if (tabs) {
+        lines = lines.map(line => ('\t' + line));
+    }
 
-    return `
-begin
+    // Build code
+    let code: string = '';
+    code += 'begin';
+    code += '\n';
+    code += lines.join('\n');
+    code += '\n';
+    code += 'end';
+    code += '\n';
 
-${code}
-
-end
-`;
+    return code;
 }
