@@ -1,6 +1,7 @@
 import { VM } from './vm';
 
 const VMInstance = new VM({ debug: true, safe: true });
+
 const canvas = document.getElementById('display');
 const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
@@ -26,7 +27,7 @@ function loadExecutable() {
  * @param file Loaded file to parse
  */
 function parseExecutable(file) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         const reader = new FileReader();
         reader.readAsArrayBuffer(file);
 
@@ -119,16 +120,19 @@ document.getElementById('reset').addEventListener('click', () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 });
 
+// Start VM
 document.getElementById('start').addEventListener('click', () => {
     VMInstance.start();
     processDisplay();
 });
 
+// Stop VM
 document.getElementById('stop').addEventListener('click', () => {
     VMInstance.stop();
     processDisplay();
 });
 
+// Execute next VM step
 document.getElementById('step').addEventListener('click', () => {
     VMInstance.step();
     processDisplay();

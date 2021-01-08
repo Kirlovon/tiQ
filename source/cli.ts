@@ -67,6 +67,8 @@ if (option === 'compile') {
 		const compiled: Uint16Array = Compile(code, { safe, optimize });
 		const time: number = Date.now() - start;
 
+		const size: number = compiled.length * 2;
+
 		if (typeof output === 'string') {
 			writeFileSync(output, Buffer.from(compiled.buffer));
 		} else {
@@ -75,9 +77,9 @@ if (option === 'compile') {
 
 		if (log) {
 			if (colors) {
-				console.info(green, `Compilation successfully finished in ${time}ms`);
+				console.info(green, `Compilation successfully finished in ${time}ms (Executable size: ${size} bytes)`);
 			} else {
-				console.info(`Compilation successfully finished in ${time}ms`);
+				console.info(`Compilation successfully finished in ${time}ms (Executable size: ${size} bytes)`);
 			}
 		}
 
@@ -123,7 +125,9 @@ if (option === 'decompile') {
 		const instructions: Uint16Array = new Uint16Array(executable.buffer, executable.byteOffset, executable.length / 2);
 		const code: string = Decompile(instructions);
 		const time: number = Date.now() - start;
-	
+		
+		const lines: number = code.split('\n').length;
+
 		if (typeof output === 'string') {
 			writeFileSync(output, code);
 		} else {
@@ -132,9 +136,9 @@ if (option === 'decompile') {
 	
 		if (log) {
 			if (colors) {
-				console.info(green, `Decompilation successfully finished in ${time}ms`);
+				console.info(green, `Decompilation successfully finished in ${time}ms (${lines} lines of code)`);
 			} else {
-				console.info(`Decompilation successfully finished in ${time}ms`);
+				console.info(`Decompilation successfully finished in ${time}ms (${lines} lines of code)`);
 			}
 		}
 

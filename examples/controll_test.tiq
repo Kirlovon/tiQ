@@ -1,7 +1,6 @@
 Input testing code
 
 begin
-
         // Loop start
         :start
 
@@ -183,8 +182,5 @@ begin
         display, 21, 20, 0
         display, 22, 20, 0
         jump, :check_up
-
-        
-        2000
 end
 

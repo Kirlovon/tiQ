@@ -171,7 +171,7 @@ export class VM {
 
 			case opcodes.ADD: {
 				let value: number = this.accumulator + this.memory[argument];
-				if (this.safe && value > 4095) value = 4095;
+				if (this.safe && value > 65535) value = 65535;
 
 				this.accumulator = value;
 				if (this.debug) this.log(`ADD, ${argument}`);

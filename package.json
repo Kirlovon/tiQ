@@ -1,6 +1,6 @@
 {
   "name": "tiq",
-  "version": "0.5.0",
+  "version": "0.8.0",
   "description": "Tiny 16bit fantasy console written in TypeScript",
   "main": "index.js",
   "scripts": {

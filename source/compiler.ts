@@ -135,6 +135,22 @@ export function Compile(code: string, config: Partial<Config> = {}): Uint16Array
 	const declarations: DeclareToken[] = [];
 	const labels: Map<string, { line: number; address: number }> = new Map();
 
+	// Declarations should be declared at the code beginning
+	if (safe) {
+		let declarations: boolean = true;
+
+		for (let i = 0; i < tokens.length; i++) {
+			const token = tokens[i];
+
+			if (declarations) {
+				if (token.type !== 'declare') declarations = false;
+			} else {
+				if (token.type === 'declare')
+					throw new CompilationError(`Declarations must be only at the very beginning of code execution`, token.line, true);
+			}
+		}
+	}
+
 	// Find all declarations
 	tokens = tokens.filter(token => {
 		if (token.type !== 'declare') return true;
@@ -142,7 +158,7 @@ export function Compile(code: string, config: Partial<Config> = {}): Uint16Array
 
 		// Validate declarations
 		if (address > 4095 || address < 0) throw new CompilationError(`Address "${address}" is out of range`, line);
-		if (value > 4095 || value < 0) throw new CompilationError(`Value "${value}" is out of range`, line);
+		if (value > 65535 || value < 0) throw new CompilationError(`Value "${value}" is out of range`, line);
 
 		declarations.push(token);
 		return false;

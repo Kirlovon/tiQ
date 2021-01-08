@@ -10,13 +10,40 @@ A simple virtual console I made for training purposes. The project consists of a
 <br>
 <br>
 
+## Table of Contents
+* [Specifications](#Specifications)
+* [Web GUI](#Web-GUI)
+* [CLI](#CLI)
+* [Instruction Set](#Instruction-Set)
+* [Assembly Syntax](#Assembly-Syntax)
+
+<br>
+
 ## Specifications
 * Display: **32x32 Black & White**
 * Input: **6 buttons**
 * Supports **16 Instructions**
-* Memory: **8kb** *( Can store up to 4096 instructions )*
+* Memory: **8kb** *(Can store up to 4096 instructions)*
 
 <br>
+
+## Web GUI
+
+
+## CLI
+
+This repository contains a CLI that you can use to compile source code and decompile binary files. Since CLI is written in TypeScript, you need to compile it first, or use `ts-node` utility.
+
+For more information, type:
+```
+ts-node ./source/cli.ts help
+```
+
+_Examples:_
+```
+ts-node ./source/cli.ts compile source.tiq executable.bin
+ts-node ./source/cli.ts decompile executable.bin source.tiq
+```
 
 ## Instruction Set
 
@@ -51,13 +78,13 @@ Set accumulator value to 1 if the current accumulator value less than value in t
 Set accumulator value to 1 if the current accumulator value greater than value in the specified address. Otherwise, accumulator value will be set to 0.
 
 #### 8. AND, address
-Set accumulator value to 1 if the current accumulator and address values are positive _( greater than 0 )_. Otherwise, accumulator value will be set to 0.
+Set accumulator value to 1 if the current accumulator and address values are positive _(greater than 0)_. Otherwise, accumulator value will be set to 0.
 
 #### 9. OR, address
 Set accumulator value to 1 if the current accumulator and address values equals to 0. Otherwise, accumulator value will be set to 0.
 
 #### 10. JUMP, address
-Set the counter _( current execution address )_, to the specified address.
+Set the counter _(current execution address)_, to the specified address.
 The specified address will be executed on the next tick.
 
 #### 11. TRUE, address
@@ -109,12 +136,12 @@ _Example:_
 ```js
 begin
 	0 // Same as finish keyword
-	4098 // Same as load, 2 ( Since 4096 * 1 + 2 will be 4098 )
+	4098 // Same as load, 2 (Since 4096 * 1 + 2 will be 4098)
 end
 ```
 
 ### declare, _address_, _value_
-You can declare a raw instruction or number at a certain address using the keyword `declare`. It is best to declare the values at the beginning of the program, since the position of this keyword does not matter. Any declarations will be carried out at the end of the compilation. 
+You can declare a raw instruction or number at a specified address using the keyword `declare`. All declarations must be at the beginning of the program, since they will be processed only at compilation time. 
 
 _Example:_
 ```js
@@ -154,7 +181,7 @@ _Example:_
 ```js
 begin
 	declare, 1000, 99
-	load, 1000 // Load value from address 1000 ( Accumulator will be 99 )
+	load, 1000 // Load value from address 1000 (Accumulator will be 99)
 end
 ```
 
@@ -177,13 +204,13 @@ Set accumulator value to 1 if the current accumulator value less than value in t
 Set accumulator value to 1 if the current accumulator value greater than value in the specified add
 
 ### and, _address_
-Set accumulator value to 1 if the current accumulator and address values are positive _( greater than 0 )_. Otherwise, accumulator value will be set to 0.
+Set accumulator value to 1 if the current accumulator and address values are positive _(greater than 0)_. Otherwise, accumulator value will be set to 0.
 
 ### or, _address_
 Set accumulator value to 1 if the current accumulator and address values equals to 0. Otherwise, accumulator value will be set to 0.
 
 ### jump, _address / label_
-Set the counter _( current execution address )_, to the specified address or label.
+Set the counter _(current execution address)_, to the specified address or label.
 The specified address will be executed on the next tick.
 
 _Example:_
@@ -199,7 +226,7 @@ end
 ```
 
 ### true, _address / label_
-Same as jump, but will be executed only when current accumulator value is positive _( greater than 0 )_.
+Same as jump, but will be executed only when current accumulator value is positive _(greater than 0)_.
 
 ### false, _address / label_
 Same as jump, but will be executed only when current accumulator value equals to 0.
@@ -229,22 +256,4 @@ begin
 	display, 0, 0, 1 // Set top left pixel to black
 	display, 31, 31, 1 // Set bottom right pixel to black
 end
-```
-
-
-<br>
-
-## CLI Tool
-
-This repository contains a CLI that you can use to compile source code and decompile binary files. Since CLI is written in TypeScript, you need to compile it, or use `ts-node` utility.
-
-For more information, type:
-```
-ts-node ./source/cli.ts help
-```
-
-_Examples:_
-```
-ts-node ./source/cli.ts compile source.tiq executable.bin
-ts-node ./source/cli.ts decompile executable.bin source.tiq
 ```
