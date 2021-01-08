@@ -30,8 +30,13 @@ for (let i = 0; i < args.length; i++) {
 
 // If no input
 if (typeof input === 'undefined') {
-	console.log('Input file is not specified');
-	process.exit();
+	if (colors) {
+		console.error(red, 'Input file is not specified');
+	} else {
+		console.error('Input file is not specified');
+	}
+
+	process.exit(1);
 }
 
 // Compilation
@@ -55,6 +60,9 @@ if (type === 'compile') {
 				console.info(`Compilation successfully finished in ${time}ms`);
 			}
 		}
+
+		process.exit(0);
+
 	} catch (error) {
 		if (error instanceof CompilationError) {
 			const info: string = error.line === -1 ? 'global' : `line:${error.line}`;
@@ -72,6 +80,8 @@ if (type === 'compile') {
 				console.error(error);
 			}
 		}
+
+		process.exit(1);
 	}
 }
 
@@ -98,7 +108,19 @@ if (type === 'decompile') {
 				console.info(`Decompilation successfully finished in ${time}ms`);
 			}
 		}
+
+		process.exit(0);
+
 	} catch (error) {
 		console.error(error); // TODO
+		process.exit(1);
 	}
 }
+
+if (colors) {
+	console.error(red, 'Incorrect type of operation, should be "compile" or "decompile"');
+} else {
+	console.error('Incorrect type of operation, should be "compile" or "decompile"');
+}
+
+process.exit(1);

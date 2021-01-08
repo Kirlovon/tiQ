@@ -3,34 +3,34 @@ Input testing code
 begin
 
         // Loop start
-        start:
+        :start
 
-        check_up:
+        :check_up
         input, 0
-        true, draw_up
-        false, clean_up
+        true, :draw_up
+        false, :clean_up
 
-        check_down:
+        :check_down
         input, 1
-        true, draw_down
-        false, clean_down
+        true, :draw_down
+        false, :clean_down
 
-        check_left:
+        :check_left
         input, 2
-        true, draw_left
-        false, clean_left
+        true, :draw_left
+        false, :clean_left
 
-        check_right:
+        :check_right
         input, 3
-        true, draw_right
-        false, clean_right
+        true, :draw_right
+        false, :clean_right
 
 
-        jump, start
+        jump, :start
 
         //////////////////////////////////////
 
-        draw_up:
+        :draw_up
         display, 14, 12, 1
         display, 15, 12, 1
         display, 16, 12, 1
@@ -47,9 +47,9 @@ begin
         display, 15, 15, 1
         display, 16, 15, 1
         display, 17, 15, 1
-        jump, check_down
+        jump, :check_down
 
-        draw_down:
+        :draw_down
         display, 14, 17, 1
         display, 15, 17, 1
         display, 16, 17, 1
@@ -66,9 +66,9 @@ begin
         display, 15, 20, 1
         display, 16, 20, 1
         display, 17, 20, 1
-        jump, check_left
+        jump, :check_left
 
-        draw_left:
+        :draw_left
         display, 9, 17, 1
         display, 10, 17, 1
         display, 11, 17, 1
@@ -85,9 +85,9 @@ begin
         display, 10, 20, 1
         display, 11, 20, 1
         display, 12, 20, 1
-        jump, check_right
+        jump, :check_right
 
-        draw_right:
+        :draw_right
         display, 19, 17, 1
         display, 20, 17, 1
         display, 21, 17, 1
@@ -104,11 +104,11 @@ begin
         display, 20, 20, 1
         display, 21, 20, 1
         display, 22, 20, 1
-        jump, check_up
+        jump, :check_up
 
         //////////////////////////////////////
 
-        clean_up:
+        :clean_up
         display, 14, 12, 0
         display, 15, 12, 0
         display, 16, 12, 0
@@ -125,9 +125,9 @@ begin
         display, 15, 15, 0
         display, 16, 15, 0
         display, 17, 15, 0
-        jump, check_down
+        jump, :check_down
 
-        clean_down:
+        :clean_down
         display, 14, 17, 0
         display, 15, 17, 0
         display, 16, 17, 0
@@ -144,9 +144,9 @@ begin
         display, 15, 20, 0
         display, 16, 20, 0
         display, 17, 20, 0
-        jump, check_left
+        jump, :check_left
 
-        clean_left:
+        :clean_left
         display, 9, 17, 0
         display, 10, 17, 0
         display, 11, 17, 0
@@ -163,9 +163,9 @@ begin
         display, 10, 20, 0
         display, 11, 20, 0
         display, 12, 20, 0
-        jump, check_right
+        jump, :check_right
 
-        clean_right:
+        :clean_right
         display, 19, 17, 0
         display, 20, 17, 0
         display, 21, 17, 0
@@ -182,6 +182,9 @@ begin
         display, 20, 20, 0
         display, 21, 20, 0
         display, 22, 20, 0
-        jump, check_up
+        jump, :check_up
+
+        
+        2000
 end
 

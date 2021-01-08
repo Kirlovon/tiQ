@@ -7,7 +7,7 @@ interface Config {
 // Default configuration
 const defaultConfig: Config = {
     tabs: true,
-    labels: true
+    labels: true // TODO
 }
 
 /**
@@ -20,6 +20,8 @@ export function Decompile(executable: Uint16Array, config?: Config): string {
     config = { ...defaultConfig, ...config };
 
     let lines: string[] = [];
+    let declarations: string[] = [];
+
     const { tabs, labels } = config;
     
     for (let i = 0; i < executable.length; i++) {
@@ -33,7 +35,7 @@ export function Decompile(executable: Uint16Array, config?: Config): string {
         }
 
         if (opcode === 0) {
-            lines.push(`nothing, ${argument}`);
+            lines.push(`${argument}`);
             continue;
         }
 
@@ -120,36 +122,39 @@ export function Decompile(executable: Uint16Array, config?: Config): string {
         }
     }
 
-    // for (let i = 0; i < lines.length; i++) {
-    //     const line = lines[i];
+    // Find declarations
+    for (let i = 1; i < lines.length; i++) {
+        const currentLine: string = lines[i]
+        const nextLine: string | undefined  = lines[i + 1]; 
 
-    //     if (line.startsWith('true')) {
-    //         const pos = parseInt(line.slice(6));
-    //         lines.splice(pos, 0, 'ddddd:');
-    //         lines.splice(pos, 0, '');
+        // If current number is raw number
+        if (/^\d+$/.test(currentLine)) {
+            if (nextLine === 'finish' || nextLine === undefined) {
+                lines[i] = 'finish'
+                declarations.push(`declare, ${i}, ${currentLine}`)
+            }
+        }
+    }
 
-    //         lines[i] = 'true, ddddd'
-    //     }
+    // Remove "finish" lines
+    while(lines[lines.length - 1] === 'finish') {
+        lines.pop();
+    }
 
-    //     if (line.startsWith('jump')) {
-    //         const pos = parseInt(line.slice(6));
-    //         lines.splice(pos, 0, 'ddddd:');
-    //         lines.splice(pos, 0, '');
-
-    //         lines[i] = 'jump, ddddd'
-    //     }
+    // Add one "finish" line
+    lines.push('finish');
         
-        
-    // }
-
     // Tabulation
     if (tabs) {
         lines = lines.map(line => ('\t' + line));
+        declarations = declarations.map(line => ('\t' + line));
     }
 
     // Build code
     let code: string = '';
     code += 'begin';
+    code += '\n';
+    code += declarations.join('\n');
     code += '\n';
     code += lines.join('\n');
     code += '\n';

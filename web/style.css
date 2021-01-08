@@ -41,6 +41,8 @@ body {
 	bottom: 32px;
 	position: fixed;
 	font-size: 11px;
+	max-width: 360px;
+	line-height: 20px;
 	letter-spacing: 1px;
 	text-shadow: 0 2px 8px black;
 }
@@ -88,8 +90,15 @@ body {
 	text-shadow: 0 2px 8px black;
 }
 
+a {
+	color: grey;
+	font-size: 14px;
+	font-weight: bold;
+	text-decoration: none;
+}
+
 b {
-	font-size: 16px;
+	font-size: 20px;
 	font-weight: bold;
 }
 
@@ -132,7 +141,7 @@ button:focus {
 	border: none;
 }
 
-@media (max-width: 400px) {
+@media (max-width: 600px) {
 	.info {
         display: none;
     }

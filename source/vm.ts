@@ -159,13 +159,13 @@ export class VM {
 
 			case opcodes.LOAD: {
 				this.accumulator = this.memory[argument];
-				if (this.debug) this.log(`LOAD, ${argument} (${this.accumulator})`);
+				if (this.debug) this.log(`LOAD, ${argument}`);
 				break;
 			}
 
 			case opcodes.SAVE: {
 				this.memory[argument] = this.accumulator;
-				if (this.debug) this.log(`SAVE, ${argument} (${this.accumulator})`);
+				if (this.debug) this.log(`SAVE, ${argument}`);
 				break;
 			}
 
@@ -174,7 +174,7 @@ export class VM {
 				if (this.safe && value > 4095) value = 4095;
 
 				this.accumulator = value;
-				if (this.debug) this.log(`ADD, ${argument} (${this.accumulator})`);
+				if (this.debug) this.log(`ADD, ${argument}`);
 				break;
 			}
 
@@ -183,25 +183,25 @@ export class VM {
 				if (this.safe && value < 0) value = 0;
 
 				this.accumulator = value;
-				if (this.debug) this.log(`SUBSTRACT, ${argument} ( ${this.accumulator})`);
+				if (this.debug) this.log(`SUBSTRACT, ${argument}`);
 				break;
 			}
 
 			case opcodes.EQUAL: {
 				this.accumulator = this.accumulator === this.memory[argument] ? 1 : 0;
-				if (this.debug) this.log(`EQUAL, ${argument} ( ${this.accumulator})`);
+				if (this.debug) this.log(`EQUAL, ${argument}`);
 				break;
 			}
 
 			case opcodes.LESS: {
 				this.accumulator = this.accumulator < this.memory[argument] ? 1 : 0;
-				if (this.debug) this.log(`LESS, ${argument} ( ${this.accumulator})`);
+				if (this.debug) this.log(`LESS, ${argument}`);
 				break;
 			}
 
 			case opcodes.GREATER: {
 				this.accumulator = this.accumulator > this.memory[argument] ? 1 : 0;
-				if (this.debug) this.log(`GREATER, ${argument} ( ${this.accumulator})`);
+				if (this.debug) this.log(`GREATER, ${argument}`);
 				break;
 			}
 
@@ -209,7 +209,7 @@ export class VM {
 				const a: 0 | 1 = this.accumulator === 0 ? 0 : 1;
 				const b: 0 | 1 = this.memory[argument] === 0 ? 0 : 1;
 				this.accumulator = a & b;
-				if (this.debug) this.log(`AND, ${argument} ( ${this.accumulator})`);
+				if (this.debug) this.log(`AND, ${argument}`);
 				break;
 			}
 
@@ -217,38 +217,38 @@ export class VM {
 				const a: 0 | 1 = this.accumulator === 0 ? 0 : 1;
 				const b: 0 | 1 = this.memory[argument] === 0 ? 0 : 1;
 				this.accumulator = a | b;
-				if (this.debug) this.log(`OR, ${argument} ( ${this.accumulator})`);
+				if (this.debug) this.log(`OR, ${argument}`);
 				break;
 			}
 
 			case opcodes.JUMP: {
 				this.counter = argument - 1;
-				if (this.debug) this.log(`JUMP, ${argument} (${this.accumulator})`);
+				if (this.debug) this.log(`JUMP, ${argument}`);
 				break;
 			}
 
 			case opcodes.TRUE: {
 				if (this.accumulator !== 0) this.counter = argument - 1;
-				if (this.debug) this.log(`TRUE, ${argument} (${this.accumulator})`);
+				if (this.debug) this.log(`TRUE, ${argument}`);
 				break;
 			}
 
 			case opcodes.FALSE: {
 				if (this.accumulator === 0) this.counter = argument - 1;
-				if (this.debug) this.log(`FALSE, ${argument} (${this.accumulator})`);
+				if (this.debug) this.log(`FALSE, ${argument}`);
 				break;
 			}
 
 			case opcodes.RANDOM: {
 				this.accumulator = Math.floor(Math.random() * (argument + 1));
-				if (this.debug) this.log(`RANDOM, ${argument} (${this.accumulator})`);
+				if (this.debug) this.log(`RANDOM, ${argument}`);
 				break;
 			}
 
 			case opcodes.INPUT: {
 				const value: number = this.input[argument];
 				this.accumulator = value ? 1 : 0;
-				if (this.debug) this.log(`INPUT, ${argument} (${this.accumulator})`);
+				if (this.debug) this.log(`INPUT, ${argument}`);
 				break;
 			}
 

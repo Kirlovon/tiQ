@@ -30,9 +30,9 @@ interface DeclareToken extends Token {
 	address: number;
 }
 
-// Point token structure
-interface PointToken extends Token {
-	type: 'point';
+// Label token structure
+interface LabelToken extends Token {
+	type: 'label';
 	name: string;
 }
 
@@ -83,7 +83,7 @@ interface DisplayToken extends Token {
 // List of tokens
 type Tokens = Array<
 	| FinishToken
-	| PointToken
+	| LabelToken
 	| DeclareToken
 	| RawToken
 	| NothingToken
@@ -124,7 +124,7 @@ export function Compile(code: string, config: Partial<Config> = {}): Uint16Array
 
 	let tokens: Tokens = tokenized;
 	const declarations: DeclareToken[] = [];
-	const points: Map<string, { line: number; address: number }> = new Map();
+	const labels: Map<string, { line: number; address: number }> = new Map();
 
 	// Find all declarations
 	tokens = tokens.filter(token => {
@@ -139,17 +139,17 @@ export function Compile(code: string, config: Partial<Config> = {}): Uint16Array
 		return false;
 	});
 
-	// Find all points
+	// Find all labels
 	tokens = tokens.filter((token, index) => {
-		if (token.type !== 'point') return true;
+		if (token.type !== 'label') return true;
 		const { name, line } = token;
 
-		// Check if point is already declared
-		if (safe && points.has(name)) throw new CompilationError(`Point "${name}" declared multiple times`, line, true);
+		// Check if label is already declared
+		if (safe && labels.has(name)) throw new CompilationError(`Label "${name}" declared multiple times`, line, true);
 
-		points.set(name, {
+		labels.set(name, {
 			line: line,
-			address: index - points.size,
+			address: index - labels.size,
 		});
 		return false;
 	});
@@ -251,9 +251,9 @@ export function Compile(code: string, config: Partial<Config> = {}): Uint16Array
 			let address: number;
 
 			if (typeof token.position === 'string') {
-				const point = points.get(token.position);
-				if (typeof point === 'undefined') throw new CompilationError(`Point "${token.position}" is not found`, token.line);
-				address = point.address;
+				const label = labels.get(token.position);
+				if (typeof label === 'undefined') throw new CompilationError(`Label "${token.position}" is not found`, token.line);
+				address = label.address;
 			} else {
 				if (token.position > 4095 || token.position < 0)
 					throw new CompilationError(`Address "${token.position}" is out of range`, token.line);
@@ -269,9 +269,9 @@ export function Compile(code: string, config: Partial<Config> = {}): Uint16Array
 			let address: number;
 
 			if (typeof token.position === 'string') {
-				const point = points.get(token.position);
-				if (typeof point === 'undefined') throw new CompilationError(`Point "${token.position}" is not found`, token.line);
-				address = point.address;
+				const label = labels.get(token.position);
+				if (typeof label === 'undefined') throw new CompilationError(`Label "${token.position}" is not found`, token.line);
+				address = label.address;
 			} else {
 				if (token.position > 4095 || token.position < 0)
 					throw new CompilationError(`Address "${token.position}" is out of range`, token.line);
@@ -287,9 +287,9 @@ export function Compile(code: string, config: Partial<Config> = {}): Uint16Array
 			let address: number;
 
 			if (typeof token.position === 'string') {
-				const point = points.get(token.position);
-				if (typeof point === 'undefined') throw new CompilationError(`Point "${token.position}" is not found`, token.line);
-				address = point.address;
+				const label = labels.get(token.position);
+				if (typeof label === 'undefined') throw new CompilationError(`Label "${token.position}" is not found`, token.line);
+				address = label.address;
 			} else {
 				if (token.position > 4095 || token.position < 0)
 					throw new CompilationError(`Address "${token.position}" is out of range`, token.line);
@@ -389,10 +389,10 @@ function Tokenize(lines: Line[]): Tokens {
 			continue;
 		}
 
-		// Point
-		if (/^(\D)\w+:$/.test(content)) {
-			const name: string = content.slice(0, -1);
-			tokens.push({ line, type: 'point', name });
+		// Label
+		if (/^:\w+$/.test(content)) {
+			const name: string = content;
+			tokens.push({ line, type: 'label', name });
 			continue;
 		}
 
@@ -482,7 +482,7 @@ function Tokenize(lines: Line[]): Tokens {
 		}
 
 		// Jump
-		if (/^jump,\w+$/.test(content)) {
+		if (/^jump,(:\w+|\d+)$/.test(content)) {
 			const isNumber: boolean = /^\d+$/.test(args[0]);
 			const position: number | string = isNumber ? parseInt(args[0]) : args[0];
 			tokens.push({ line, type: 'jump', position });
@@ -490,7 +490,7 @@ function Tokenize(lines: Line[]): Tokens {
 		}
 
 		// True
-		if (/^true,\w+$/.test(content)) {
+		if (/^true,(:\w+|\d+)$/.test(content)) {
 			const isNumber: boolean = /^\d+$/.test(args[0]);
 			const position: number | string = isNumber ? parseInt(args[0]) : args[0];
 			tokens.push({ line, type: 'true', position });
@@ -498,7 +498,7 @@ function Tokenize(lines: Line[]): Tokens {
 		}
 
 		// False
-		if (/^false,\w+$/.test(content)) {
+		if (/^false,(:\w+|\d+)$/.test(content)) {
 			const isNumber: boolean = /^\d+$/.test(args[0]);
 			const position: number | string = isNumber ? parseInt(args[0]) : args[0];
 			tokens.push({ line, type: 'false', position });
