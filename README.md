@@ -29,6 +29,13 @@ A simple virtual console I made for training purposes. The project consists of a
 
 ## Web GUI
 
+The `/web` folder contains the web gui, through which you can run executable files. Also, GUI available here:
+
+#### [Try it here!](https://kirlovon.dev/tiQ/web/)
+
+The console screen is rendered on Canvas element and the VM logs are printed in the DevTools console. Also, you can interact with the VM by stopping it, executing one step, or starting it up again.
+
+<br>
 
 ## CLI
 
@@ -44,6 +51,8 @@ _Examples:_
 ts-node ./source/cli.ts compile source.tiq executable.bin
 ts-node ./source/cli.ts decompile executable.bin source.tiq
 ```
+
+<br>
 
 ## Instruction Set
 
