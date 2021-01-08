@@ -1,3 +1,4 @@
+import { basename } from 'path';
 import { readFileSync, writeFileSync } from 'fs';
 import { Compile, CompilationError } from './compiler';
 import { Decompile } from './decompiler';
@@ -9,7 +10,7 @@ const yellow: string = '\x1b[33m%s\x1b[0m';
 
 // Arguments
 const args: string[] = process.argv.slice(2);
-const type: string = args[0]?.toLowerCase();
+const option: string = args[0]?.toLowerCase();
 const input: string = args[1];
 const output: string = args[2];
 
@@ -28,19 +29,38 @@ for (let i = 0; i < args.length; i++) {
 	if (argument === '--no-optimizations') optimize = false;
 }
 
-// If no input
-if (typeof input === 'undefined') {
-	if (colors) {
-		console.error(red, 'Input file is not specified');
-	} else {
-		console.error('Input file is not specified');
-	}
+// Help command
+if (option === 'help') {
+	console.log(`Usage: ${basename(__filename)} [option] [input] [output] [flags]`);
+	console.log('\n');
 
-	process.exit(1);
+	console.log('Types:');
+	console.log('\t', 'compile', '\t\t', 'Compile source file to executable code');
+	console.log('\t', 'decompile', '\t\t', 'Decompile executable file to source code');
+	console.log('\t', 'help', '\t\t\t', 'Show help information');
+	console.log('\n');
+
+	console.log('Flags:')
+	console.log('\t', '--no-log', '\t\t', 'Do not display additional information')
+	console.log('\t', '--no-safe', '\t\t', 'Compilation in unsafe mode')
+	console.log('\t', '--no-colors', '\t\t', 'Print info without colors')
+	console.log('\t', '--no-optimizations', '\t', 'Compilation without executable code optimizations')
+	console.log('\n');
+
+	process.exit(0);
 }
 
 // Compilation
-if (type === 'compile') {
+if (option === 'compile') {
+	if (typeof input === 'undefined') {
+		if (colors) {
+			console.error(red, 'Input file is not specified');
+		} else {
+			console.error('Input file is not specified');
+		}
+		process.exit(1);
+	}
+
 	try {
 		const start = Date.now();
 		const code: string = readFileSync(input, { encoding: 'utf-8' });
@@ -85,8 +105,17 @@ if (type === 'compile') {
 	}
 }
 
-// Decompelation
-if (type === 'decompile') {
+// Decompilation
+if (option === 'decompile') {
+	if (typeof input === 'undefined') {
+		if (colors) {
+			console.error(red, 'Input file is not specified');
+		} else {
+			console.error('Input file is not specified');
+		}
+		process.exit(1);
+	}
+
 	try {
 		const start = Date.now();
 		const content: Buffer = readFileSync(input);
@@ -112,15 +141,20 @@ if (type === 'decompile') {
 		process.exit(0);
 
 	} catch (error) {
-		console.error(error); // TODO
+		if (colors) {
+			console.error(red, error);
+		} else {
+			console.error(error);
+		}
+
 		process.exit(1);
 	}
 }
 
 if (colors) {
-	console.error(red, 'Incorrect type of operation, should be "compile" or "decompile"');
+	console.error(red, `Incorrect option`);
 } else {
-	console.error('Incorrect type of operation, should be "compile" or "decompile"');
+	console.error(`Incorrect option`);
 }
 
 process.exit(1);

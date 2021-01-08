@@ -95,9 +95,18 @@ type Tokens = Array<
 	| DisplayToken
 >;
 
-// Compilator configuration
+/**
+ * Compilator configuration
+ */
 interface Config {
+	/**
+	 * Perform additional validations that may reveal runtime errors. _( Default: true )_
+	 */
 	safe: boolean;
+
+	/**
+	 * Trim compiled byte code. Reduces the size of the executable file. _( Default: true )_
+	 */
 	optimize: boolean;
 }
 

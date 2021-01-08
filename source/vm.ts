@@ -223,18 +223,21 @@ export class VM {
 
 			case opcodes.JUMP: {
 				this.counter = argument - 1;
+				if (this.safe && this.accumulator < 0) this.accumulator = 0;
 				if (this.debug) this.log(`JUMP, ${argument}`);
 				break;
 			}
 
 			case opcodes.TRUE: {
 				if (this.accumulator !== 0) this.counter = argument - 1;
+				if (this.safe && this.accumulator < 0) this.accumulator = 0;
 				if (this.debug) this.log(`TRUE, ${argument}`);
 				break;
 			}
 
 			case opcodes.FALSE: {
 				if (this.accumulator === 0) this.counter = argument - 1;
+				if (this.safe && this.accumulator < 0) this.accumulator = 0;
 				if (this.debug) this.log(`FALSE, ${argument}`);
 				break;
 			}

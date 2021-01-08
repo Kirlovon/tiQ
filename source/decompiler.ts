@@ -1,13 +1,24 @@
-// Decompilation config
+/**
+ * Decompilation config.
+ */
 interface Config {
+
+    /**
+     * Add tabs to the return code _( Default: true )_
+     */
     tabs: boolean;
+
+    /**
+     * TODO: Not working right now
+     * Create labels for JUMP, TRUE & FALSE instructions
+     */
     labels: boolean;
 }
 
 // Default configuration
 const defaultConfig: Config = {
     tabs: true,
-    labels: true // TODO
+    labels: true
 }
 
 /**
@@ -142,7 +153,9 @@ export function Decompile(executable: Uint16Array, config?: Config): string {
     }
 
     // Add one "finish" line
-    lines.push('finish');
+    if (lines.length < 4096) {
+        lines.push('finish');
+    }
         
     // Tabulation
     if (tabs) {
