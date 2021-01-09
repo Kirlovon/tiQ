@@ -1,7 +1,8 @@
 import { basename } from 'path';
 import { readFileSync, writeFileSync } from 'fs';
-import { Compile, CompilationError } from './compiler';
+
 import { Decompile } from './decompiler';
+import { Compile, CompilationError } from './compiler';
 
 // Colors
 const red: string = '\x1b[31m%s\x1b[0m';
@@ -63,11 +64,12 @@ if (option === 'compile') {
 
 	try {
 		const start = Date.now();
+
 		const code: string = readFileSync(input, { encoding: 'utf-8' });
 		const compiled: Uint16Array = Compile(code, { safe, optimize });
-		const time: number = Date.now() - start;
-
 		const size: number = compiled.length * 2;
+
+		const time: number = Date.now() - start;
 
 		if (typeof output === 'string') {
 			writeFileSync(output, Buffer.from(compiled.buffer));
@@ -77,9 +79,9 @@ if (option === 'compile') {
 
 		if (log) {
 			if (colors) {
-				console.info(green, `Compilation successfully finished in ${time}ms (Executable size: ${size} bytes)`);
+				console.info(green, `Compilation successfully finished in ${time}ms (Executable size: ${size} bytes, ${compiled.length} instructions)`);
 			} else {
-				console.info(`Compilation successfully finished in ${time}ms (Executable size: ${size} bytes)`);
+				console.info(`Compilation successfully finished in ${time}ms (Executable size: ${size} bytes, ${compiled.length} instructions)`);
 			}
 		}
 
@@ -120,13 +122,15 @@ if (option === 'decompile') {
 
 	try {
 		const start = Date.now();
+
 		const content: Buffer = readFileSync(input);
 		const executable: Buffer = Buffer.from(content);
 		const instructions: Uint16Array = new Uint16Array(executable.buffer, executable.byteOffset, executable.length / 2);
 		const code: string = Decompile(instructions);
+		const lines: number = code.split('\n').length;
+
 		const time: number = Date.now() - start;
 		
-		const lines: number = code.split('\n').length;
 
 		if (typeof output === 'string') {
 			writeFileSync(output, code);
@@ -155,6 +159,7 @@ if (option === 'decompile') {
 	}
 }
 
+// Options not found
 if (colors) {
 	console.error(red, `Incorrect option`);
 } else {

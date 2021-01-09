@@ -253,8 +253,6 @@ _Possible keys:_
 * **3** - arrow right.
 * **4** - key Z.
 * **5** - key X.
-* **6** - _unused_
-* **7** - _unused_
 
 ### display, _x_, _y_, _color_
 Change pixel color on specified coordinates. X and Y arguments must be between 0 and 31. Color argument must be 1 or 0.

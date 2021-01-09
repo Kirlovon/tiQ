@@ -37,7 +37,7 @@ export class VM {
 	public memory: Uint16Array = new Uint16Array(4096);
 
 	public display: Uint8Array = new Uint8Array(1024);
-	public input: Uint8Array = new Uint8Array(8);
+	public input: Uint8Array = new Uint8Array(6);
 
 	private loop?: number;
 

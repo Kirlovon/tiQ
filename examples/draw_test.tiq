@@ -1,0 +1,20 @@
+Screen testing
+
+begin
+        declare, 20, 4
+        declare, 30, 4
+        declare, 31, 4
+
+        :start
+
+        // Draw pixel
+        61441
+
+        // Increase pixel
+        load, 0
+        add, 20
+        save, 0
+
+        jump, :start
+end
+

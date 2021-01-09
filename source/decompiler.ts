@@ -119,7 +119,6 @@ export function Decompile(executable: Uint16Array, config?: Config): string {
             lines.push(`input, ${argument}`);
             continue;
         }
-
         
         if (opcode === 15) {
             const x: number = Math.floor(argument / 128);
@@ -134,15 +133,15 @@ export function Decompile(executable: Uint16Array, config?: Config): string {
     }
 
     // Find declarations
-    for (let i = 1; i < lines.length; i++) {
+    for (let i = lines.length; i >= 0; i--) {
         const currentLine: string = lines[i]
         const nextLine: string | undefined  = lines[i + 1]; 
 
         // If current number is raw number
         if (/^\d+$/.test(currentLine)) {
             if (nextLine === 'finish' || nextLine === undefined) {
-                lines[i] = 'finish'
-                declarations.push(`declare, ${i}, ${currentLine}`)
+                lines[i] = 'finish';
+                declarations.push(`declare, ${i}, ${currentLine}`);
             }
         }
     }
@@ -167,7 +166,8 @@ export function Decompile(executable: Uint16Array, config?: Config): string {
     let code: string = '';
     code += 'begin';
     code += '\n';
-    code += declarations.join('\n');
+    code += declarations.reverse().join('\n');
+    code += '\n';
     code += '\n';
     code += lines.join('\n');
     code += '\n';

@@ -1,4 +1,4 @@
-Input testing code
+Input & Output testing
 
 begin
         // Loop start
@@ -23,7 +23,6 @@ begin
         input, 3
         true, :draw_right
         false, :clean_right
-
 
         jump, :start
 
