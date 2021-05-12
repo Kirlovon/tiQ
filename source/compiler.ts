@@ -1,5 +1,7 @@
 import { opcodes } from './vm';
 
+// TODO: Allow to use labels in any instructions
+
 // Code line structure
 interface Line {
 	index: number;
